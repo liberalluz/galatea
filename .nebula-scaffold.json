@@ -1,0 +1,96 @@
+{
+  "project": "galatea",
+  "stack": "flutter",
+  "platforms": [
+    "windows",
+    "macos",
+    "ios"
+  ],
+  "components": [
+    {
+      "name": "client",
+      "stack": "flutter",
+      "stack_source": "core",
+      "stack_version": 1,
+      "stack_hash": "f6fcf77ae3c2",
+      "dirs": [
+        "app",
+        "server",
+        "content",
+        "infra"
+      ],
+      "platforms": [
+        "windows",
+        "macos",
+        "ios"
+      ]
+    }
+  ],
+  "language": {
+    "primary": "zh-CN",
+    "supported": [
+      "zh-CN",
+      "en-US"
+    ],
+    "external": "zh-CN"
+  },
+  "repoPolicy": {
+    "version": 1,
+    "provider": "github",
+    "profile": "strict",
+    "visibility": "private",
+    "defaultBranch": "main",
+    "codeowners": [
+      "@wilkommel"
+    ],
+    "review": {
+      "requirePullRequest": true,
+      "requiredApprovals": 1,
+      "requireCodeOwnerReview": true,
+      "dismissStaleApprovals": true,
+      "requireLastPushApproval": true,
+      "requireConversationResolution": true
+    },
+    "checks": {
+      "required": [],
+      "requireUpToDate": false
+    },
+    "linearHistory": true,
+    "push": {
+      "allowForce": false,
+      "allowDeletions": false
+    }
+  },
+  "workflow": "full",
+  "created_at": "2026-11-19T06:37:33.609891+00:00",
+  "distribution": {
+    "model": "oss",
+    "source": "docs"
+  },
+  "git": {
+    "convention": "team",
+    "types": [
+      "feat",
+      "fix",
+      "docs",
+      "test",
+      "refactor",
+      "chore",
+      "ci"
+    ],
+    "scopes": [
+      "app",
+      "plugin",
+      "content",
+      "infra",
+      "docs",
+      "repo",
+      "tools"
+    ],
+    "body": [
+      "Why:",
+      "Batch:"
+    ]
+  },
+  "repoLanguage": "en-US"
+}
