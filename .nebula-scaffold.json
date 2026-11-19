@@ -92,5 +92,8 @@
       "Batch:"
     ]
   },
-  "repoLanguage": "en-US"
+  "repoLanguage": "en-US",
+  "execution": {
+    "batch": "infra/tool/batch"
+  }
 }

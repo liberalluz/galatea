@@ -35,3 +35,22 @@
 **/skills/nebula-requirements/
 **/skills/nebula-verification/
 # END NEBULA MANAGED
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+
+# Build output
+build/
+dist/
+.dart_tool/
+.godot/
+__pycache__/
+*.pyc
+
+# Batch execution state
+.batch/

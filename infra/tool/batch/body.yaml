@@ -1,0 +1,15 @@
+# The shape of a prepared PR body. Body lint and `pr --prepare` read it;
+# keep it in step with `.github/PULL_REQUEST_TEMPLATE.md`.
+format: 1
+sections:
+  - key: summary
+    heading: Summary
+  - key: impact
+    heading: Impact
+  - key: verification
+    heading: Verification
+    require_command_block: true
+  - key: risks
+    heading: Risks
+  - key: self_check
+    heading: Self-check

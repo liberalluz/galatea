@@ -1,0 +1,22 @@
+# Optional: suggest at most two skills for a batch card.
+# `batch.py lint <card>` and `batch.py plan` print the suggestions; they never
+# edit the card. Only skills installed under an agent root are suggested.
+#
+# by_type: card type -> skill ids
+# by_path: path prefix -> skill ids
+# by_stage: lifecycle stage -> skill ids
+by_type:
+  docs: [documentation-and-adrs]
+  fix: [debugging-and-error-recovery]
+  feat: [test-driven-development, incremental-implementation]
+  process: [git-workflow-and-versioning, code-review-and-quality]
+by_path:
+  src/: [test-driven-development]
+  docs/: [documentation-and-adrs]
+  .github/: [ci-cd-and-automation]
+by_stage:
+  requirements: [spec-driven-development, interview-me]
+  design: [api-and-interface-design, code-simplification]
+  verification: [test-driven-development, debugging-and-error-recovery]
+  planning: [planning-and-task-breakdown, git-workflow-and-versioning]
+  delivery: [shipping-and-launch, deprecation-and-migration]

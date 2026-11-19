@@ -1,0 +1,62 @@
+{
+  "base": "main",
+  "branch_prefix": "batch/",
+  "docs_root": "",
+  "scope": {
+    "ignore": [
+      "**/.dart_tool/**",
+      "**/build/**"
+    ],
+    "generated": [
+      "**/.dart_tool/**",
+      "**/build/**"
+    ]
+  },
+  "commit": {
+    "types": [],
+    "scopes": [],
+    "body": []
+  },
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "dart",
+        "format",
+        "--output=none",
+        "--set-exit-if-changed",
+        "."
+      ],
+      "cwd": "app"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "flutter",
+        "analyze"
+      ],
+      "cwd": "app"
+    },
+    {
+      "name": "build",
+      "command": [
+        "flutter",
+        "build",
+        "bundle"
+      ],
+      "cwd": "app"
+    },
+    {
+      "name": "test",
+      "command": [
+        "flutter",
+        "test"
+      ],
+      "cwd": "app"
+    }
+  ],
+  "release_checks": [],
+  "pr_create": [],
+  "translate": [],
+  "merge": []
+}
