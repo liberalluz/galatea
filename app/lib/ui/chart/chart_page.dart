@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
+import '../../content/examples.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
@@ -41,6 +42,7 @@ class ChartPage extends StatefulWidget {
     super.key,
     this.catalogFuture,
     this.correspondenceFuture,
+    this.examplesFuture,
     this.audioService,
     this.readingMode = false,
   });
@@ -48,6 +50,9 @@ class ChartPage extends StatefulWidget {
   /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
   final Future<CorrespondenceTable>? correspondenceFuture;
+
+  /// Injectable example data (`B9`); production loads the bundled asset.
+  final Future<ExamplesData>? examplesFuture;
 
   /// Injectable audio service (ADR-0002 interface); defaults to the
   /// platform provider when omitted.
@@ -66,6 +71,8 @@ class _ChartPageState extends State<ChartPage> {
       widget.catalogFuture ?? loadPhonemeCatalog();
   late final Future<CorrespondenceTable?> _correspondence =
       widget.correspondenceFuture ?? loadCorrespondence();
+  late final Future<ExamplesData?> _examples =
+      widget.examplesFuture ?? loadExamples();
   late final AudioService _audio =
       widget.audioService ?? createDefaultAudioService();
 
@@ -112,13 +119,14 @@ class _ChartPageState extends State<ChartPage> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Object?>>(
-      future: Future.wait<Object?>([_catalog, _correspondence]),
+      future: Future.wait<Object?>([_catalog, _correspondence, _examples]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         final catalog = snapshot.data![0] as PhonemeCatalog;
         final correspondence = snapshot.data![1] as CorrespondenceTable?;
+        final examples = snapshot.data![2] as ExamplesData?;
         final glyphs = <String, String>{
           for (final m
               in correspondence?.mappings ?? const <CorrespondenceMapping>[])
@@ -168,7 +176,7 @@ class _ChartPageState extends State<ChartPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   for (final group in _groupedEntries(catalog.entries))
-                    ..._groupWidgets(context, group, glyphs, catalog),
+                    ..._groupWidgets(context, group, glyphs, catalog, examples),
                   const SizedBox(height: 16),
                   Text(
                     '来源：${catalog.sourceLabel}',
@@ -199,6 +207,7 @@ class _ChartPageState extends State<ChartPage> {
     MapEntry<String, List<PhonemeCatalogEntry>> group,
     Map<String, String> glyphs,
     PhonemeCatalog catalog,
+    ExamplesData? examples,
   ) {
     return [
       Padding(
@@ -208,7 +217,7 @@ class _ChartPageState extends State<ChartPage> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
-      _groupTable(context, group.value, glyphs, catalog),
+      _groupTable(context, group.value, glyphs, catalog, examples),
     ];
   }
 
@@ -217,6 +226,7 @@ class _ChartPageState extends State<ChartPage> {
     List<PhonemeCatalogEntry> entries,
     Map<String, String> glyphs,
     PhonemeCatalog catalog,
+    ExamplesData? examples,
   ) {
     const columns = 5;
     final rows = <TableRow>[];
@@ -232,6 +242,7 @@ class _ChartPageState extends State<ChartPage> {
             entry,
             glyphs[entry.id] ?? entry.printGlyph,
             catalog,
+            examples,
           ),
         // Pad the last row so it stays left-aligned inside the 5-column grid.
         for (var pad = chunk.length; pad < columns; pad++) const SizedBox(),
@@ -249,6 +260,7 @@ class _ChartPageState extends State<ChartPage> {
     PhonemeCatalogEntry entry,
     String glyph,
     PhonemeCatalog catalog,
+    ExamplesData? examples,
   ) {
     final selected = _selectedId == entry.id;
     return Padding(
@@ -267,7 +279,11 @@ class _ChartPageState extends State<ChartPage> {
           }
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => DetailPage(catalog: catalog, initialId: entry.id),
+              builder: (_) => DetailPage(
+                catalog: catalog,
+                initialId: entry.id,
+                examples: examples,
+              ),
             ),
           );
         },
