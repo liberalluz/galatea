@@ -27,11 +27,34 @@ Future<void> pumpSession(
 
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(body: QuizSession(range: range ?? _range())),
+      home: Scaffold(
+        body: QuizSession(range: range ?? _range(), tasks: _stubTasks()),
+      ),
     ),
   );
   await tester.pump();
 }
+
+/// A stub task registry pinning the session state machine: the fixed-verdict
+/// answer action keeps the progress, rate and feedback tests independent of
+/// the real task types (`B13` decision: the registry is injectable).
+Map<String, QuizTaskBuilder> _stubTasks() => {
+  'recognition': (context, task) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(
+        task.entry.printGlyph,
+        key: ValueKey('session-stub-prompt-${task.entry.id}'),
+      ),
+      const SizedBox(height: 24),
+      FilledButton(
+        key: const ValueKey('session-stub-answer'),
+        onPressed: () => task.onAnswered(true),
+        child: const Text('作答'),
+      ),
+    ],
+  ),
+};
 
 Future<void> pumpPracticeAndConfirm(WidgetTester tester) async {
   tester.view.physicalSize = const Size(1080, 2400);

@@ -57,6 +57,7 @@ class _PracticePageState extends State<PracticePage> {
             range: catalog.entries
                 .where((entry) => _selected.contains(entry.id))
                 .toList(growable: false),
+            catalog: catalog,
           );
         }
         final visible = catalog.entries
