@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../domain/notation.dart';
@@ -10,7 +11,10 @@ import '../detail/detail_page.dart';
 /// the grid; KK is the default and switching re-renders the symbols while
 /// the selected phoneme stays selected (`REQ-003`, `TC-CHART-003`).
 /// Tapping a symbol opens the detail route in the default state
-/// (`REQ-004`).
+/// (`REQ-004`); in reading mode (`REQ-005`, wireframe P2) the tap plays the
+/// phoneme's audio through the audio service and stays on the chart, the
+/// fixed hint line shows above the grid while the mode is on, and a failed
+/// playback shows the short failure notice without ever navigating.
 
 const Map<String, String> _kGroupTitles = {
   'front': '元音·前',
@@ -33,11 +37,25 @@ const Map<Notation, String> _kNotationLabels = {
 };
 
 class ChartPage extends StatefulWidget {
-  const ChartPage({super.key, this.catalogFuture, this.correspondenceFuture});
+  const ChartPage({
+    super.key,
+    this.catalogFuture,
+    this.correspondenceFuture,
+    this.audioService,
+    this.readingMode = false,
+  });
 
   /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
   final Future<CorrespondenceTable>? correspondenceFuture;
+
+  /// Injectable audio service (ADR-0002 interface); defaults to the
+  /// platform provider when omitted.
+  final AudioService? audioService;
+
+  /// Reading mode (`REQ-005`): owned by the shell's top-right switch; on,
+  /// grid taps play audio and stay; off, they navigate to detail.
+  final bool readingMode;
 
   @override
   State<ChartPage> createState() => _ChartPageState();
@@ -48,9 +66,48 @@ class _ChartPageState extends State<ChartPage> {
       widget.catalogFuture ?? loadPhonemeCatalog();
   late final Future<CorrespondenceTable?> _correspondence =
       widget.correspondenceFuture ?? loadCorrespondence();
+  late final AudioService _audio =
+      widget.audioService ?? createDefaultAudioService();
 
   Notation _notation = Notation.kk;
   String? _selectedId;
+  PhonemeCatalogEntry? _lastPlayed;
+
+  @override
+  void initState() {
+    super.initState();
+    _audio.state.addListener(_onAudioStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _audio.state.removeListener(_onAudioStateChanged);
+    super.dispose();
+  }
+
+  void _onAudioStateChanged() {
+    if (!mounted) {
+      return;
+    }
+    if (_audio.state.value == AudioPlaybackState.failed &&
+        _lastPlayed != null) {
+      final entry = _lastPlayed!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('播放失败，重试'),
+          action: SnackBarAction(
+            label: '重试',
+            onPressed: () => _playAudio(entry),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _playAudio(PhonemeCatalogEntry entry) {
+    _lastPlayed = entry;
+    _audio.play(entry.id, entry.tts.isEmpty ? entry.id : entry.tts);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +131,18 @@ class _ChartPageState extends State<ChartPage> {
         };
         return Column(
           children: [
+            if (widget.readingMode)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '直读模式：点按只发音',
+                    key: const ValueKey('reading-hint'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: SegmentedButton<String>(
@@ -190,6 +259,12 @@ class _ChartPageState extends State<ChartPage> {
           setState(() {
             _selectedId = entry.id;
           });
+          if (widget.readingMode) {
+            // Reading mode (`REQ-005`): play audio, never navigate — even a
+            // failed playback keeps the tap on the chart (wireframe P2).
+            _playAudio(entry);
+            return;
+          }
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => DetailPage(catalog: catalog, initialId: entry.id),
