@@ -3,7 +3,7 @@
 | Dir | Purpose |
 |---|---|
 | `specs/` | how it should be |
-| `specs/controlled/` | baseline-versioned SRS / SDD / STP / STD / SCMP |
+| `specs/controlled/` | baseline-versioned SRS / SDD / STP / STD (SCMP is not in the v0.1.0 controlled set — ruling 2026-11-21) |
 | `decisions/` | ADR |
 | `intent/` | why |
 | `ideas/` | unaccepted candidates |
