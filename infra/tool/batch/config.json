@@ -21,6 +21,8 @@
     {
       "name": "format",
       "command": [
+        "cmd",
+        "/c",
         "dart",
         "format",
         "--output=none",
@@ -32,6 +34,8 @@
     {
       "name": "lint",
       "command": [
+        "cmd",
+        "/c",
         "flutter",
         "analyze"
       ],
@@ -40,6 +44,8 @@
     {
       "name": "build",
       "command": [
+        "cmd",
+        "/c",
         "flutter",
         "build",
         "bundle"
@@ -49,6 +55,8 @@
     {
       "name": "test",
       "command": [
+        "cmd",
+        "/c",
         "flutter",
         "test"
       ],
