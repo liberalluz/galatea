@@ -1523,9 +1523,13 @@ def command_list(value: Any) -> list[str]:
 
 
 def run_hook(
-    root: Path, command: Sequence[str], values: dict[str, str]
+    root: Path,
+    command: Sequence[str],
+    values: dict[str, str],
+    *,
+    timeout: int = 300,
 ) -> tuple[int, str, str]:
-    merged = {"pr": "", **values}
+    merged = {"pr": "", "root": str(root), **values}
     resolved = [
         re.sub(
             r"\{([a-z]+)\}",
@@ -1534,14 +1538,18 @@ def run_hook(
         )
         for item in command
     ]
-    proc = subprocess.run(
-        resolved,
-        cwd=root,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    try:
+        proc = subprocess.run(
+            resolved,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return 124, "", f"timed out after {timeout}s"
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
@@ -2820,7 +2828,13 @@ def pr_body(root: Path, batch_id: str) -> str:
         if not command:
             continue
         code, out, err = run_hook(
-            root, command, {"batch": batch_id, "card": str(batch_dir(root, batch_id) / "card.json")}
+            root,
+            command,
+            {
+                "batch": batch_id,
+                "card": str(batch_dir(root, batch_id) / "card.json"),
+                "root": str(root),
+            },
         )
         if code != 0:
             raise SystemExit(
@@ -2828,63 +2842,70 @@ def pr_body(root: Path, batch_id: str) -> str:
             )
         content[str(section["key"])] = out.splitlines() or [out]
 
-    if "summary" not in content:
-        content["summary"] = [
+    content.setdefault(
+        "summary",
+        [
             f"Batch `{batch_id}`: {card.get('goal', '')}",
             "",
             f"- Branch: `{state.get('branch', '')}`",
             f"- Base: `{base}`",
-        ]
-    if "impact" not in content:
-        content["impact"] = [
+        ],
+    )
+    content.setdefault(
+        "impact",
+        [
             "Allowed:",
             *[f"- `{item}`" for item in card.get("allowed", [])],
             "",
             f"Changed files: {len(changed)}",
             *[f"- `{item}`" for item in changed],
-        ]
-    verification: list[str] = []
-    if checks:
-        verification.extend(
-            f"- `{name}`: {item.get('status', 'unknown')}"
-            for name, item in checks.items()
-        )
-    else:
-        verification.append("- checks: none configured")
-    budget = int(scope.get("budget") or 0)
-    added = int(scope.get("added") or 0)
-    deleted = int(scope.get("deleted") or 0)
-    verification.append(
-        f"- scope: {str(scope.get('result', 'unknown')).upper()} "
-        f"({scope.get('changed', len(changed))} files, {added + deleted} lines, "
-        f"budget {budget or 'none'})"
+        ],
     )
-    verification.append(f"- evidence: `.batch/{batch_id}/evidence.log`")
     if "verification" not in content:
-        content["verification"] = verification
-
-    risks = [str(item) for item in scope.get("violations", [])]
-    override = state.get("budget_override") or None
-    if budget and added + deleted > budget:
-        if override:
-            risks.append(
-                f"budget: {added + deleted} changed lines exceeds {budget} — "
-                f"override: {override.get('reason', '')}"
+        verification: list[str] = []
+        if checks:
+            verification.extend(
+                f"- `{name}`: {item.get('status', 'unknown')}"
+                for name, item in checks.items()
             )
         else:
-            risks.append(f"budget: {added + deleted} changed lines exceeds {budget}")
-    if int(scope.get("binary") or 0):
-        risks.append(f"binary files: {scope.get('binary')} (diff is not reviewable)")
-    for key, label in (("id_error", "id"), ("source_error", "source")):
-        if state.get(key):
-            risks.append(f"{label}: {state[key]}")
-    warnings = (state.get("changelog") or {}).get("warnings") or []
-    risks.extend(str(item) for item in warnings)
+            verification.append("- checks: none configured")
+        budget = int(scope.get("budget") or 0)
+        added = int(scope.get("added") or 0)
+        deleted = int(scope.get("deleted") or 0)
+        verification.append(
+            f"- scope: {str(scope.get('result', 'unknown')).upper()} "
+            f"({scope.get('changed', len(changed))} files, {added + deleted} lines, "
+            f"budget {budget or 'none'})"
+        )
+        verification.append(f"- evidence: `.batch/{batch_id}/evidence.log`")
+        content["verification"] = verification
+
     if "risks" not in content:
+        risks = [str(item) for item in scope.get("violations", [])]
+        override = state.get("budget_override") or None
+        budget = int(scope.get("budget") or 0)
+        added = int(scope.get("added") or 0)
+        deleted = int(scope.get("deleted") or 0)
+        if budget and added + deleted > budget:
+            if override:
+                risks.append(
+                    f"budget: {added + deleted} changed lines exceeds {budget} — "
+                    f"override: {override.get('reason', '')}"
+                )
+            else:
+                risks.append(f"budget: {added + deleted} changed lines exceeds {budget}")
+        if int(scope.get("binary") or 0):
+            risks.append(f"binary files: {scope.get('binary')} (diff is not reviewable)")
+        for key, label in (("id_error", "id"), ("source_error", "source")):
+            if state.get(key):
+                risks.append(f"{label}: {state[key]}")
+        warnings = (state.get("changelog") or {}).get("warnings") or []
+        risks.extend(str(item) for item in warnings)
         content["risks"] = risks or ["None recorded by the gate."]
 
-    criteria = card.get("acceptance", card.get("exit_criteria", []))
     if "self_check" not in content:
+        criteria = card.get("acceptance", card.get("exit_criteria", []))
         content["self_check"] = [f"- {item}" for item in criteria] or ["- none recorded"]
 
     lines: list[str] = []
@@ -3157,6 +3178,18 @@ def validate_body_spec(
         if severity not in {"error", "warn"}:
             raise SystemExit(f"{origin}: severity must be error or warn")
         section["severity"] = severity
+        for name in ("render", "check"):
+            command = section.get(name)
+            if command is None:
+                continue
+            if (
+                not isinstance(command, list)
+                or not command
+                or not all(isinstance(item, str) and item.strip() for item in command)
+            ):
+                raise SystemExit(
+                    f"{origin}: section {index} {name} needs a non-empty command"
+                )
     return data
 
 
@@ -3189,6 +3222,10 @@ def render_body_spec_yaml(spec: dict[str, Any]) -> str:
             lines.append(f"    severity: {section['severity']}")
         if section.get("require_command_block"):
             lines.append("    require_command_block: true")
+        for name in ("render", "check"):
+            command = section.get(name)
+            if command:
+                lines.append(f"    {name}: [{', '.join(str(item) for item in command)}]")
     return "\n".join(lines) + "\n"
 
 
@@ -3420,6 +3457,11 @@ def cmd_pr(args: argparse.Namespace) -> int:
         payload = source.read_text(encoding="utf-8")
     else:
         payload = pr_body(root, batch_id) + "\n"
+    recorded_digest = str(state.get("pr_body_sha256") or "")
+    if args.create and source is None and not args.body_file and recorded_digest:
+        recorded_path = root / str(state.get("pr_body") or "")
+        if recorded_path.is_file():
+            payload = recorded_path.read_text(encoding="utf-8")
     body_path = Path(args.body_file) if args.body_file else (batch_dir(root, batch_id) / "pr-body.md")
     body_path = body_path if body_path.is_absolute() else root / body_path
     if not inside_project(root, body_path):
@@ -3466,6 +3508,13 @@ def cmd_pr(args: argparse.Namespace) -> int:
     if not args.create:
         return 0
     if args.confirm != digest[:8]:
+        if recorded_digest and args.confirm == recorded_digest[:8]:
+            print(
+                f"the body changed since it was prepared; re-run: "
+                f"batch.py pr {batch_id} --prepare",
+                file=sys.stderr,
+            )
+            return 1
         print(f"confirm mismatch: expected {digest[:8]}", file=sys.stderr)
         return 1
     command = config.get("pr_create")
@@ -3489,17 +3538,49 @@ def cmd_pr(args: argparse.Namespace) -> int:
         print(err, file=sys.stderr)
     if code != 0:
         return 1
-    state["status"] = "pr_created"
+    number = parse_pr_number(out)
     state["pr_output"] = out
     state["pr_created_at"] = state.get("pr_created_at") or utc_now()
     state["review_at"] = state.get("review_at") or utc_now()
+    if number:
+        record_pr(state, number)
+        state["status"] = "pr_created"
+        write_json(batch_dir(root, batch_id) / "state.json", state)
+        print(f"created {batch_id} as PR #{number}")
+        return 0
     write_json(batch_dir(root, batch_id) / "state.json", state)
-    print(f"created PR for {batch_id}")
+    print(
+        f"created {batch_id} but the command printed no pull request number; "
+        f"record it with: pr {batch_id} --mark-created --pr <number>",
+        file=sys.stderr,
+    )
     return 0
 
 
+def direct_pr_rows(docs_root: Path | None) -> list[str]:
+    """Rows of `records/live/direct-prs.md`, one per direct pull request."""
+    if docs_root is None:
+        return []
+    path = docs_root / DOCS_RECORDS / "live" / "direct-prs.md"
+    if not path.is_file():
+        return []
+    rows: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if len(cells) < 4 or cells[1].lower() in {"pr", "---"} or set(cells[1]) <= {"-"}:
+            continue
+        rows.append(line)
+    return rows
+
+
 def exit_record_draft(
-    card: dict[str, Any], state: dict[str, Any], batch_id: str
+    card: dict[str, Any],
+    state: dict[str, Any],
+    batch_id: str,
+    direct_prs: list[str] | None = None,
 ) -> str:
     """Build an exit record skeleton from the card and the batch state."""
     scope = state.get("scope") or {}
@@ -3550,6 +3631,8 @@ def exit_record_draft(
     if forced == "yes":
         reason = str((state.get("check_override") or {}).get("reason", ""))
         rows.append(f"| Force reason | {reason or 'fill'} |")
+    direct = direct_prs or []
+    rows.append(f"| Direct PRs | {len(direct)} |")
     rows += [
         "",
         "## Traceability",
@@ -3764,7 +3847,10 @@ def cmd_exit(args: argparse.Namespace) -> int:
         print(f"{target} exists; pass --force to overwrite", file=sys.stderr)
         return 1
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(exit_record_draft(card, state, batch_id) + "\n", encoding="utf-8")
+    target.write_text(
+        exit_record_draft(card, state, batch_id, direct_pr_rows(docs_root)) + "\n",
+        encoding="utf-8",
+    )
     print(f"drafted {target}")
     print("fill the remaining fields, then run check_records.py")
     return 0
@@ -3850,6 +3936,19 @@ def cmd_sdp(args: argparse.Namespace) -> int:
     print(f"added {batch_id} to {sdp}")
     print("run check_plan.py on the SDP")
     return 0
+
+
+PR_URL_RE = re.compile(r"/(?:pull|merge_requests)/(\d+)")
+PR_HASH_RE = re.compile(r"(?:^|\s)#(\d+)\b", re.MULTILINE)
+
+
+def parse_pr_number(output: str) -> str:
+    """Read the pull request number a create command printed."""
+    for pattern in (PR_URL_RE, PR_HASH_RE):
+        match = pattern.search(output or "")
+        if match:
+            return match.group(1)
+    return ""
 
 
 def record_pr(state: dict[str, Any], number: object) -> None:
