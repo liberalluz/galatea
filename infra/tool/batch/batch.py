@@ -2814,6 +2814,7 @@ def pr_body(root: Path, batch_id: str) -> str:
     checks = state.get("checks") or {}
     base = state.get("base_ref") or state.get("base", "")
     spec = load_body_spec(root)
+    content: dict[str, list[str]] = {}
     for section in spec["sections"]:
         command = section.get("render")
         if not command:
@@ -2827,20 +2828,21 @@ def pr_body(root: Path, batch_id: str) -> str:
             )
         content[str(section["key"])] = out.splitlines() or [out]
 
-    content: dict[str, list[str]] = {}
-    content["summary"] = [
-        f"Batch `{batch_id}`: {card.get('goal', '')}",
-        "",
-        f"- Branch: `{state.get('branch', '')}`",
-        f"- Base: `{base}`",
-    ]
-    content["impact"] = [
-        "Allowed:",
-        *[f"- `{item}`" for item in card.get("allowed", [])],
-        "",
-        f"Changed files: {len(changed)}",
-        *[f"- `{item}`" for item in changed],
-    ]
+    if "summary" not in content:
+        content["summary"] = [
+            f"Batch `{batch_id}`: {card.get('goal', '')}",
+            "",
+            f"- Branch: `{state.get('branch', '')}`",
+            f"- Base: `{base}`",
+        ]
+    if "impact" not in content:
+        content["impact"] = [
+            "Allowed:",
+            *[f"- `{item}`" for item in card.get("allowed", [])],
+            "",
+            f"Changed files: {len(changed)}",
+            *[f"- `{item}`" for item in changed],
+        ]
     verification: list[str] = []
     if checks:
         verification.extend(
@@ -2858,7 +2860,8 @@ def pr_body(root: Path, batch_id: str) -> str:
         f"budget {budget or 'none'})"
     )
     verification.append(f"- evidence: `.batch/{batch_id}/evidence.log`")
-    content["verification"] = verification
+    if "verification" not in content:
+        content["verification"] = verification
 
     risks = [str(item) for item in scope.get("violations", [])]
     override = state.get("budget_override") or None
@@ -2877,10 +2880,12 @@ def pr_body(root: Path, batch_id: str) -> str:
             risks.append(f"{label}: {state[key]}")
     warnings = (state.get("changelog") or {}).get("warnings") or []
     risks.extend(str(item) for item in warnings)
-    content["risks"] = risks or ["None recorded by the gate."]
+    if "risks" not in content:
+        content["risks"] = risks or ["None recorded by the gate."]
 
     criteria = card.get("acceptance", card.get("exit_criteria", []))
-    content["self_check"] = [f"- {item}" for item in criteria] or ["- none recorded"]
+    if "self_check" not in content:
+        content["self_check"] = [f"- {item}" for item in criteria] or ["- none recorded"]
 
     lines: list[str] = []
     for index, section in enumerate(spec["sections"]):
