@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/audio/audio_service.dart';
 import 'package:galatea/content/correspondence.dart';
 import 'package:galatea/content/examples.dart';
+import 'package:galatea/content/glyphs.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/main.dart';
 import 'package:galatea/ui/detail/detail_page.dart';
@@ -81,6 +82,13 @@ void main() {
         ),
         examplesFuture: Future<ExamplesData>.value(
           ExamplesData(
+            version: 'test-v1',
+            sourceLabel: 'test source',
+            entries: const {},
+          ),
+        ),
+        glyphsFuture: Future<GlyphData>.value(
+          GlyphData(
             version: 'test-v1',
             sourceLabel: 'test source',
             entries: const {},

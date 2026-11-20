@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
 import '../../content/examples.dart';
+import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
@@ -43,6 +44,7 @@ class ChartPage extends StatefulWidget {
     this.catalogFuture,
     this.correspondenceFuture,
     this.examplesFuture,
+    this.glyphsFuture,
     this.audioService,
     this.readingMode = false,
   });
@@ -53,6 +55,9 @@ class ChartPage extends StatefulWidget {
 
   /// Injectable example data (`B9`); production loads the bundled asset.
   final Future<ExamplesData>? examplesFuture;
+
+  /// Injectable for widget tests; production loads the bundled assets.
+  final Future<GlyphData>? glyphsFuture;
 
   /// Injectable audio service (ADR-0002 interface); defaults to the
   /// platform provider when omitted.
@@ -73,6 +78,8 @@ class _ChartPageState extends State<ChartPage> {
       widget.correspondenceFuture ?? loadCorrespondence();
   late final Future<ExamplesData?> _examples =
       widget.examplesFuture ?? loadExamples();
+  late final Future<GlyphData?> _glyphData =
+      widget.glyphsFuture ?? loadGlyphs();
   late final AudioService _audio =
       widget.audioService ?? createDefaultAudioService();
 
@@ -119,7 +126,12 @@ class _ChartPageState extends State<ChartPage> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Object?>>(
-      future: Future.wait<Object?>([_catalog, _correspondence, _examples]),
+      future: Future.wait<Object?>([
+        _catalog,
+        _correspondence,
+        _examples,
+        _glyphData,
+      ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -127,6 +139,7 @@ class _ChartPageState extends State<ChartPage> {
         final catalog = snapshot.data![0] as PhonemeCatalog;
         final correspondence = snapshot.data![1] as CorrespondenceTable?;
         final examples = snapshot.data![2] as ExamplesData?;
+        final glyphData = snapshot.data![3] as GlyphData?;
         final glyphs = <String, String>{
           for (final m
               in correspondence?.mappings ?? const <CorrespondenceMapping>[])
@@ -176,7 +189,14 @@ class _ChartPageState extends State<ChartPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   for (final group in _groupedEntries(catalog.entries))
-                    ..._groupWidgets(context, group, glyphs, catalog, examples),
+                    ..._groupWidgets(
+                      context,
+                      group,
+                      glyphs,
+                      catalog,
+                      examples,
+                      glyphData,
+                    ),
                   const SizedBox(height: 16),
                   Text(
                     '来源：${catalog.sourceLabel}',
@@ -208,6 +228,7 @@ class _ChartPageState extends State<ChartPage> {
     Map<String, String> glyphs,
     PhonemeCatalog catalog,
     ExamplesData? examples,
+    GlyphData? glyphData,
   ) {
     return [
       Padding(
@@ -217,7 +238,7 @@ class _ChartPageState extends State<ChartPage> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
-      _groupTable(context, group.value, glyphs, catalog, examples),
+      _groupTable(context, group.value, glyphs, catalog, examples, glyphData),
     ];
   }
 
@@ -227,6 +248,7 @@ class _ChartPageState extends State<ChartPage> {
     Map<String, String> glyphs,
     PhonemeCatalog catalog,
     ExamplesData? examples,
+    GlyphData? glyphData,
   ) {
     const columns = 5;
     final rows = <TableRow>[];
@@ -243,6 +265,7 @@ class _ChartPageState extends State<ChartPage> {
             glyphs[entry.id] ?? entry.printGlyph,
             catalog,
             examples,
+            glyphData,
           ),
         // Pad the last row so it stays left-aligned inside the 5-column grid.
         for (var pad = chunk.length; pad < columns; pad++) const SizedBox(),
@@ -261,6 +284,7 @@ class _ChartPageState extends State<ChartPage> {
     String glyph,
     PhonemeCatalog catalog,
     ExamplesData? examples,
+    GlyphData? glyphData,
   ) {
     final selected = _selectedId == entry.id;
     return Padding(
@@ -283,6 +307,7 @@ class _ChartPageState extends State<ChartPage> {
                 catalog: catalog,
                 initialId: entry.id,
                 examples: examples,
+                glyphs: glyphData,
               ),
             ),
           );
