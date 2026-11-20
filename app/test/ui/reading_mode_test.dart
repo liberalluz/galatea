@@ -99,6 +99,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    // The practice tab's mastery initialization degrades to the
+    // in-memory store after a short timeout when no platform backend
+    // answers; pump past the timeout so no timer is left pending.
+    await tester.pump(const Duration(milliseconds: 200));
   }
 
   Future<void> toggleReadingMode(WidgetTester tester) async {
