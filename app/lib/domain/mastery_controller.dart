@@ -19,6 +19,13 @@ class MasteryController extends ChangeNotifier {
   /// successful write.
   bool lastWriteFailed = false;
 
+  /// Whether the backing store degraded to memory (the platform backend
+  /// was unavailable at load time), so the displayed state may not
+  /// reflect persisted data — the detail page marks the star rating
+  /// with the fixed 数据待同步 notice instead of presenting the values
+  /// as trusted (ux-flows R23 failure branch).
+  bool degraded = false;
+
   /// Loads the persisted state into the engine (stars start at 0 for a
   /// fresh install — the empty backing store reads as no entries).
   Future<void> load() async {
