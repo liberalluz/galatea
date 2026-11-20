@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'audio/audio_service.dart';
 import 'content/correspondence.dart';
 import 'content/phoneme_catalog.dart';
 import 'ui/shell/shell_page.dart';
@@ -11,11 +12,20 @@ void main() {
 /// Root of the Galatea app: the shell hosts the three fixed tabs; the chart
 /// page grows in from B4.
 class GalateaApp extends StatelessWidget {
-  const GalateaApp({super.key, this.catalogFuture, this.correspondenceFuture});
+  const GalateaApp({
+    super.key,
+    this.catalogFuture,
+    this.correspondenceFuture,
+    this.audioService,
+  });
 
   /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
   final Future<CorrespondenceTable>? correspondenceFuture;
+
+  /// Injectable audio service (ADR-0002 interface); defaults to the
+  /// platform provider when omitted.
+  final AudioService? audioService;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +38,7 @@ class GalateaApp extends StatelessWidget {
       home: ShellPage(
         catalogFuture: catalogFuture,
         correspondenceFuture: correspondenceFuture,
+        audioService: audioService,
       ),
     );
   }
