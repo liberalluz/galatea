@@ -16,12 +16,18 @@ class PhonemeCatalogEntry {
     required this.kind,
     required this.group,
     required this.printGlyph,
+    this.tts = '',
   });
 
   final String id;
   final PhonemeKind kind;
   final String group;
   final String printGlyph;
+
+  /// Speakable text for TTS synthesis (B7, ADR-0002): the bundled glyphs are
+  /// phonetic symbols the browser engines cannot read, so each entry carries
+  /// an English approximation. Falls back to the id when absent.
+  final String tts;
 }
 
 class PhonemeCatalog {
@@ -63,5 +69,6 @@ PhonemeCatalogEntry _entryFromJson(Map<String, dynamic> json) {
     kind: json['kind'] == 'vowel' ? PhonemeKind.vowel : PhonemeKind.consonant,
     group: json['group'] as String,
     printGlyph: json['kk'] as String,
+    tts: (json['tts'] as String?) ?? json['id'] as String,
   );
 }
