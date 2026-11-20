@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'content/correspondence.dart';
 import 'content/phoneme_catalog.dart';
 import 'ui/shell/shell_page.dart';
 
@@ -10,10 +11,11 @@ void main() {
 /// Root of the Galatea app: the shell hosts the three fixed tabs; the chart
 /// page grows in from B4.
 class GalateaApp extends StatelessWidget {
-  const GalateaApp({super.key, this.catalogFuture});
+  const GalateaApp({super.key, this.catalogFuture, this.correspondenceFuture});
 
-  /// Injectable for widget tests; production loads the bundled asset.
+  /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
+  final Future<CorrespondenceTable>? correspondenceFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,10 @@ class GalateaApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: ShellPage(catalogFuture: catalogFuture),
+      home: ShellPage(
+        catalogFuture: catalogFuture,
+        correspondenceFuture: correspondenceFuture,
+      ),
     );
   }
 }
