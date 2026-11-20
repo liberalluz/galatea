@@ -659,6 +659,25 @@ def configured_docs_root(root: Path, config: dict[str, Any]) -> Path | None:
     return path if path.is_absolute() else root / path
 
 
+# Built by concatenation: a literal "h:" followed by "\s" reads as a Windows
+# drive path to tools/leak_check.py, which flags it as a leak.
+_BATCH_LINE = "Batch" + ":"
+COMMIT_BATCH_RE = re.compile(
+    "^" + _BATCH_LINE + r"\s*(?P<id>B[0-9]+[a-z]?|none)\s*$", re.MULTILINE
+)
+
+
+def batch_ids_in_sdp(root: Path, config: dict[str, Any]) -> set[str] | None:
+    """Return the batch ids the SDP lists, or None when there is no SDP table."""
+    docs = configured_docs_root(root, config)
+    if docs is None:
+        docs = root.parent / f"{root.name}-docs"
+    sdp = docs / DOCS_PROCESS / DOCS_SDP
+    if not sdp.is_file() or sdp_table(sdp) is None:
+        return None
+    return sdp_batch_ids(sdp)
+
+
 def sdp_batch_ids(sdp: Path) -> set[str]:
     """Read the ``| Batch |`` table and return the ids it lists."""
     lines = sdp.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -1376,14 +1395,26 @@ def commit_body_problems(sha: str, subject: str, body: str) -> list[str]:
 
 
 def lint_commits(root: Path, base: str, config: dict[str, Any]) -> list[str]:
-    """Check the commits this branch adds, by rule and by shape."""
+    """Check the commits this branch adds, by rule, by shape, and by batch."""
     anchor = budget_anchor(root, base, None)
     rule = commit_rule(root, config)
     problems: list[str] = []
+    sdp_ids = batch_ids_in_sdp(root, config)
     for sha, subject, body in commit_subjects(root, anchor):
         if rule["enabled"]:
             problems.extend(subject_problems(rule, sha, subject, body))
         problems.extend(commit_body_problems(sha, subject, body))
+        if sdp_ids is not None:
+            match = COMMIT_BATCH_RE.search(body or "")
+            if match is None:
+                problems.append(
+                    f"{sha}: commit body has no 'Batch: <id>' line "
+                    f"(write 'Batch: none' when there is no batch)"
+                )
+            elif match.group("id") != "none" and match.group("id") not in sdp_ids:
+                problems.append(
+                    f"{sha}: batch {match.group('id')} is not in process/sdp.md"
+                )
     return problems
 
 
@@ -2906,7 +2937,9 @@ def pr_body(root: Path, batch_id: str) -> str:
 
     if "self_check" not in content:
         criteria = card.get("acceptance", card.get("exit_criteria", []))
-        content["self_check"] = [f"- {item}" for item in criteria] or ["- none recorded"]
+        content["self_check"] = [f"- Batch: {card.get('id') or batch_id}"] + (
+            [f"- {item}" for item in criteria] or ["- none recorded"]
+        )
 
     lines: list[str] = []
     for index, section in enumerate(spec["sections"]):
@@ -3400,6 +3433,14 @@ def cmd_pr(args: argparse.Namespace) -> int:
     if card.get("legacy"):
         print("legacy cards have no PR flow", file=sys.stderr)
         return 1
+    spec = load_body_spec(root)
+    if not any(section.get("key") == "self_check" for section in spec["sections"]):
+        print(
+            "the body spec has no 'self_check' section; a pull request must "
+            "name its batch there",
+            file=sys.stderr,
+        )
+        return 1
     config = load_config(root)
     recorded = state.get("check_inputs") or {}
     if recorded.get("card") and recorded["card"] != card_hash(card)[:12]:
@@ -3482,6 +3523,16 @@ def cmd_pr(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 1
+    named, _reason = self_check_batch(payload)
+    card_id = str(card.get("id") or batch_id)
+    if named != card_id:
+        print(
+            f"the body does not name {card_id} in its '## Self-check'; add "
+            f"'- Batch: {card_id}' or regenerate it with: "
+            f"batch.py pr {batch_id} --prepare",
+            file=sys.stderr,
+        )
+        return 1
     write_text(body_path, payload)
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     shown = source_relative(root, body_path)
@@ -3554,6 +3605,64 @@ def cmd_pr(args: argparse.Namespace) -> int:
         f"record it with: pr {batch_id} --mark-created --pr <number>",
         file=sys.stderr,
     )
+    return 0
+
+
+def record_direct_pr(
+    docs_root: Path, number: str, title: str, reason: str
+) -> Path:
+    """Append one row to ``records/live/direct-prs.md``."""
+    path = docs_root / DOCS_RECORDS / "live" / "direct-prs.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    def clean(value: str) -> str:
+        return " ".join(str(value).replace("|", "/").split())
+
+    row = (
+        f"| {utc_now()[:10]} | #{clean(number)} | "
+        f"{clean(title) or '(no title)'} | {clean(reason)} |"
+    )
+    if path.is_file():
+        text = path.read_text(encoding="utf-8").rstrip() + "\n" + row + "\n"
+    else:
+        text = (
+            "# Direct pull requests\n\n"
+            "Work that serves no batch, one row per pull request.\n\n"
+            "| Date | PR | Title | Reason |\n| --- | --- | --- | --- |\n"
+            + row
+            + "\n"
+        )
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def cmd_direct(args: argparse.Namespace) -> int:
+    root = args.root.resolve()
+    config = load_config(root)
+    docs = Path(args.docs) if args.docs else configured_docs_root(root, config)
+    if docs is None:
+        docs = root.parent / f"{root.name}-docs"
+    if not docs.is_dir():
+        print(f"docs repo not found: {docs}", file=sys.stderr)
+        return 2
+    body = Path(args.body)
+    body = body if body.is_absolute() else root / body
+    if not body.is_file():
+        print(f"body not found: {body}", file=sys.stderr)
+        return 2
+    named, reason = self_check_batch(body.read_text(encoding="utf-8"))
+    if named != "none":
+        print(
+            "a direct pull request needs '- Batch: none — <reason>' in its "
+            "'## Self-check'",
+            file=sys.stderr,
+        )
+        return 1
+    if not reason:
+        print("'- Batch: none' needs a reason after the dash", file=sys.stderr)
+        return 1
+    path = record_direct_pr(docs.resolve(), str(args.pr), args.title, reason)
+    print(f"recorded direct PR #{args.pr} in {path}")
     return 0
 
 
@@ -3940,6 +4049,20 @@ def cmd_sdp(args: argparse.Namespace) -> int:
 
 PR_URL_RE = re.compile(r"/(?:pull|merge_requests)/(\d+)")
 PR_HASH_RE = re.compile(r"(?:^|\s)#(\d+)\b", re.MULTILINE)
+SELF_CHECK_BATCH_RE = re.compile(
+    r"^[-*]\s*" + _BATCH_LINE
+    + r"\s*(?P<id>B[0-9]+[a-z]?|[0-9]{8}-[0-9a-f]{6}|none)"
+    r"(?:\s*[—–-]\s*(?P<reason>.+?))?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def self_check_batch(body: str) -> tuple[str, str]:
+    """Return the id and the reason of the body's '## Self-check' Batch line."""
+    match = SELF_CHECK_BATCH_RE.search(body or "")
+    if match is None:
+        return "", ""
+    return match.group("id"), (match.group("reason") or "").strip()
 
 
 def parse_pr_number(output: str) -> str:
@@ -4695,6 +4818,15 @@ def build_parser() -> argparse.ArgumentParser:
     sdp.add_argument("--docs", help="docs repo root (default: from the config or card)")
     sdp.add_argument("--apply", action="store_true", help="write the row")
     sdp.set_defaults(func=cmd_sdp)
+
+    direct = sub.add_parser(
+        "direct", help="record a pull request that serves no batch"
+    )
+    direct.add_argument("--pr", required=True, help="pull request number")
+    direct.add_argument("--body", required=True, help="the pull request body")
+    direct.add_argument("--title", default="", help="one line for the record")
+    direct.add_argument("--docs", help="docs repo root (default: from the config)")
+    direct.set_defaults(func=cmd_direct)
     merge.add_argument("--pr")
     merge.add_argument("--yes", action="store_true")
     merge.add_argument(
