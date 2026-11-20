@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/audio_service.dart';
+import '../../content/correspondence.dart';
 import '../../content/glyphs.dart';
+import '../../content/matching_pairs.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../content/spelling_options.dart';
 import '../../content/symbol_options.dart';
@@ -19,6 +21,7 @@ class QuizTaskContext {
     required this.onSkip,
     this.audioService,
     this.glyphs,
+    this.correspondence,
   });
 
   final PhonemeCatalogEntry entry;
@@ -34,6 +37,11 @@ class QuizTaskContext {
   /// The handwritten glyph data backing the writing stem (B10, ADR-0003);
   /// the writing task renders the preparing state when it is absent.
   final GlyphData? glyphs;
+
+  /// The KK/DJ/IPA table backing the matching right column (B4,
+  /// ADR-0001/ADR-0004); the matching task renders the preparing state
+  /// when it is absent.
+  final CorrespondenceTable? correspondence;
 
   /// The item counts as answered regardless of the verdict (PRD completion
   /// rule); the verdict rides along for the B17 mastery engine.
@@ -51,13 +59,14 @@ typedef QuizTaskBuilder = Widget Function(
 );
 
 /// The default task registry: the recognition task (`B13`), the listening
-/// task (`B14`) and the writing task (`B15`). B16 registers the remaining
-/// task type here without changing the shell.
+/// task (`B14`), the writing task (`B15`) and the matching task (`B16`).
+/// The registry now covers every fixed task type of SDD §3.4.
 const Map<String, QuizTaskBuilder> kDefaultQuizTasks =
     <String, QuizTaskBuilder>{
       'recognition': _buildRecognitionTask,
       'listening': _buildListeningTask,
       'writing': _buildWritingTask,
+      'matching': _buildMatchingTask,
     };
 
 /// Quiz session shell (`REQ-020`, `REQ-021`, `TC-QUIZ-006`, `TC-QUIZ-007`):
@@ -78,6 +87,7 @@ class QuizSession extends StatefulWidget {
     this.taskType = 'recognition',
     this.audioService,
     this.glyphs,
+    this.correspondence,
   }) : tasks = tasks ?? kDefaultQuizTasks;
 
   /// The confirmed range, in catalog order. The progress denominator.
@@ -105,6 +115,12 @@ class QuizSession extends StatefulWidget {
   /// ADR-0003); handed to the task through [QuizTaskContext]. Defaults to
   /// `null`, which the writing task renders as the preparing state.
   final GlyphData? glyphs;
+
+  /// The KK/DJ/IPA table backing the matching right column (`B4`,
+  /// ADR-0001/ADR-0004); handed to the task through [QuizTaskContext].
+  /// Defaults to `null`, which the matching task renders as the preparing
+  /// state.
+  final CorrespondenceTable? correspondence;
 
   @override
   State<QuizSession> createState() => _QuizSessionState();
@@ -215,6 +231,7 @@ class _QuizSessionState extends State<QuizSession> {
         onSkip: _skip,
         audioService: widget.audioService,
         glyphs: widget.glyphs,
+        correspondence: widget.correspondence,
       ),
     );
   }
@@ -555,6 +572,145 @@ class _WritingTaskBodyState extends State<_WritingTaskBody> {
             key: const ValueKey('task-submit'),
             onPressed: _submit,
             child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The matching task (`REQ-019`, `TC-QUIZ-005`): three pronunciation play
+/// controls on the left and three DJ symbols on the right; pairing
+/// connects one pair at a time, a correct pair greys out inert and a
+/// mispair snaps back without counting as completion (ux-flows R19).
+/// Without the correspondence table it renders the fixed preparing state.
+Widget _buildMatchingTask(BuildContext context, QuizTaskContext task) {
+  final correspondence = task.correspondence;
+  final options = correspondence == null
+      ? null
+      : buildMatchingOptions(task.entry, task.catalog!, correspondence);
+  if (options == null) {
+    return _buildPreparingState(context, task.onSkip);
+  }
+  return _MatchingTaskBody(task: task, options: options);
+}
+
+class _MatchingTaskBody extends StatefulWidget {
+  const _MatchingTaskBody({required this.task, required this.options});
+
+  final QuizTaskContext task;
+  final MatchingOptions options;
+
+  @override
+  State<_MatchingTaskBody> createState() => _MatchingTaskBodyState();
+}
+
+class _MatchingTaskBodyState extends State<_MatchingTaskBody> {
+  /// The left item armed by the last tap; one pair connects at a time.
+  int? _armed;
+
+  /// The pair indexes already matched; their items grey out inert
+  /// (ux-flows R19 exit branch) and cannot be re-paired.
+  final Set<int> _matched = <int>{};
+
+  void _tapLeft(int index) {
+    if (_matched.contains(index)) return;
+    final pair = widget.options.pairs[index];
+    widget.task.audioService?.play(pair.entry.id, pair.entry.tts);
+    setState(() => _armed = index);
+  }
+
+  void _tapRight(String dj) {
+    final armed = _armed;
+    if (armed == null || _matched.contains(armed)) return;
+    if (widget.options.pairs[armed].dj == dj) {
+      setState(() {
+        _matched.add(armed);
+        _armed = null;
+      });
+      // R19 has no failing terminal state: completing every pair counts
+      // the item answered correct; mispairs never reach this callback.
+      if (_matched.length == widget.options.pairs.length) {
+        widget.task.onAnswered(true);
+      }
+      return;
+    }
+    // ux-flows R19 failure branch: the mispair snaps back — both items
+    // return to the tappable state and the mispair does not count as
+    // completion.
+    setState(() => _armed = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget item({
+      required Key key,
+      required String label,
+      required bool greyed,
+      required bool highlighted,
+      required VoidCallback? onPressed,
+    }) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: OutlinedButton(
+          key: key,
+          onPressed: greyed ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: greyed
+                ? scheme.surfaceContainerHighest
+                : highlighted
+                ? scheme.primaryContainer
+                : null,
+            foregroundColor: greyed
+                ? scheme.onSurface.withValues(alpha: 0.4)
+                : null,
+            minimumSize: const Size(200, 48),
+          ),
+          child: Text(label),
+        ),
+      );
+    }
+
+    final pairs = widget.options.pairs;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          // Left column: the pronunciation play controls (R19 step 1);
+          // tapping arms the item and speaks the phoneme.
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < pairs.length; i++)
+                  item(
+                    key: ValueKey('task-pair-left-${pairs[i].entry.id}'),
+                    label: pairs[i].entry.printGlyph,
+                    greyed: _matched.contains(i),
+                    highlighted: _armed == i,
+                    onPressed: () => _tapLeft(i),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Right column: the DJ symbols in the fixed shuffled order
+          // (no pre-connected pairs); tapping pairs with the armed item.
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (final dj in widget.options.rightOrder)
+                  item(
+                    key: ValueKey('task-pair-right-$dj'),
+                    label: dj,
+                    greyed: _matched.any((i) => pairs[i].dj == dj),
+                    highlighted: false,
+                    onPressed: () => _tapRight(dj),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

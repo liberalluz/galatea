@@ -1,0 +1,5 @@
+- Batch: B16 — matching task only; the quiz shell and the other task types are untouched
+- Added: the matching task (`TC-QUIZ-005`, `REQ-019`): three pronunciation play controls on the left and three DJ symbols on the right; pairing connects one pair at a time, matched pairs grey out inert and mispairs snap back without counting as completion (ux-flows R19)
+- Added: the deterministic pair-set builder (`matching_pairs.dart`): the current phoneme plus the next distinct-DJ catalog entries (wrapping), the right column in a fixed rotated order so no pair aligns by position; the bundled table's duplicate DJ glyphs are skipped to keep the right column unambiguous
+- Added: the session grows the optional `correspondence` parameter handed to the task through `QuizTaskContext`; without the table the task renders the fixed preparing state
+- Registry: `'matching'` completes the fixed task-type set of SDD §3.4 (`REQ-016`–`REQ-019`)
