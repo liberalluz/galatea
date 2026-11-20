@@ -8,6 +8,14 @@ import 'audio_service.dart';
 /// phoneme audio on device, so there is no audio file to cache — the cache
 /// seam from ADR-0002 stays behind the interface and a real cache arrives
 /// with a future provider (see the B7 PR notes).
+///
+/// Offline ruling (B19, `REQ-029`, ux-flows R29): synthesis runs on device
+/// and depends on no network fetch, so the pronunciation path works with
+/// the network off; the SDP B19 wording "cached audio plays" reads as this
+/// on-device synthesis, and no cache implementation ships this batch. When
+/// synthesis is unavailable the provider reports the shared failed state
+/// and the fixed failure links take over — no connectivity probe, no
+/// offline-specific copy.
 @JS('window.speechSynthesis')
 external SpeechSynthesis? get _speechSynthesis;
 
