@@ -88,6 +88,7 @@ class QuizSession extends StatefulWidget {
     this.audioService,
     this.glyphs,
     this.correspondence,
+    this.onRecord,
   }) : tasks = tasks ?? kDefaultQuizTasks;
 
   /// The confirmed range, in catalog order. The progress denominator.
@@ -122,6 +123,11 @@ class QuizSession extends StatefulWidget {
   /// state.
   final CorrespondenceTable? correspondence;
 
+  /// Reports every verdict with the phoneme id (`B17`): the mastery
+  /// engine records the answer regardless of the practice mode. Optional
+  /// — the B12 state-machine tests omit it.
+  final void Function(String phonemeId, bool correct)? onRecord;
+
   @override
   State<QuizSession> createState() => _QuizSessionState();
 }
@@ -141,6 +147,7 @@ class _QuizSessionState extends State<QuizSession> {
 
   void _answer(bool correct) {
     final entry = widget.range[_index];
+    widget.onRecord?.call(entry.id, correct);
     setState(() {
       _answered.add(entry.id);
       _lastCorrect = correct;

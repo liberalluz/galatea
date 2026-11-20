@@ -48,7 +48,7 @@
         "/c",
         "flutter",
         "build",
-        "bundle"
+        "web"
       ],
       "cwd": "app"
     },
