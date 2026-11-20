@@ -1,15 +1,23 @@
 # The shape of a prepared PR body. Body lint and `pr --prepare` read it;
 # keep it in step with `.github/PULL_REQUEST_TEMPLATE.md`.
+# Each section renders through infra/tool/batch/render/render_body.py, which
+# merges mechanical facts (card/state) with the judgement slots in the batch's
+# local pr-notes.md; missing slots fall back to the built-in rendering.
 format: 1
 sections:
   - key: summary
     heading: Summary
+    render: [python, infra/tool/batch/render/render_body.py, --batch, "{batch}", --section, summary]
   - key: impact
     heading: Impact
+    render: [python, infra/tool/batch/render/render_body.py, --batch, "{batch}", --section, impact]
   - key: verification
     heading: Verification
     require_command_block: true
+    render: [python, infra/tool/batch/render/render_body.py, --batch, "{batch}", --section, verification]
   - key: risks
     heading: Risks
+    render: [python, infra/tool/batch/render/render_body.py, --batch, "{batch}", --section, risks]
   - key: self_check
     heading: Self-check
+    render: [python, infra/tool/batch/render/render_body.py, --batch, "{batch}", --section, self_check]
