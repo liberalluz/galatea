@@ -64,7 +64,36 @@
     }
   ],
   "release_checks": [],
-  "pr_create": [],
+  "pr_create": [
+    "gh",
+    "pr",
+    "create",
+    "--base",
+    "main",
+    "--head",
+    "{branch}",
+    "--title",
+    "{title}",
+    "--body-file",
+    "{body}"
+  ],
+  "pr_view": [
+    "gh",
+    "pr",
+    "view",
+    "{pr}",
+    "--json",
+    "body",
+    "-q",
+    ".body"
+  ],
   "translate": [],
-  "merge": []
+  "merge": [
+    "gh",
+    "pr",
+    "merge",
+    "{pr}",
+    "--squash",
+    "--delete-branch"
+  ]
 }
