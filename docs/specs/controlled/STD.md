@@ -15,7 +15,7 @@ it is a recorded TBD row in the STP.
   1. Open the chart page.
   2. Count the rendered phoneme entries.
   3. Inspect the source label on the chart page.
-- Exit: exactly 50 entries render and the source label is visible.
+- Exit: exactly 48 entries render and the source label is visible.
 
 ### `TC-CHART-002`
 
@@ -24,7 +24,7 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Observe the grid layout.
   2. Check each phoneme against its category group header.
-- Exit: 5 columns render and each of the 50 phonemes appears exactly once in its category group.
+- Exit: 5 columns render and each of the 48 phonemes appears exactly once in its category group.
 
 ### `TC-CHART-003`
 
@@ -63,7 +63,7 @@ it is a recorded TBD row in the STP.
 ### `TC-DETAIL-002`
 
 - Covers: `REQ-007`
-- Preconditions: detail pages reachable for all 50 phonemes.
+- Preconditions: detail pages reachable for all 48 phonemes.
 - Steps: open every phoneme's detail page and inspect the mouth-shape slot.
 - Exit: each page shows a mouth-shape image; a missing asset renders the fixed preparing placeholder, never a blank area.
 
@@ -200,7 +200,7 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Switch notation KK → DJ → IPA on the phoneme.
   2. Open the Me tab statistics and filter by each notation.
-- Exit: the star is identical across all three notations; statistics filter per notation with denominator 50.
+- Exit: the star is identical across all three notations; statistics filter per notation with denominator 48.
 
 ### `TC-PLATFORM-001`
 
@@ -232,7 +232,7 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Scroll and scale the 5-column grid; check for clipping or column wrap.
   2. Measure tappable practice option areas.
-- Exit: no clipping or wrap; all 50 phonemes reachable; option areas ≥ 44 pt.
+- Exit: no clipping or wrap; all 48 phonemes reachable; option areas ≥ 44 pt.
 
 ### `TC-QUAL-003`
 

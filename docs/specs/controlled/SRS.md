@@ -13,13 +13,13 @@ criterion; it does not restate the PRD.
 - `REQ-025` (iOS functional confirmation, PRD R25) is scheduled for v0.2.0 and
   is listed only for traceability; it is not part of this slice.
 - Mastery is counted per phoneme, shared across the KK / DJ / IPA notations
-  (PRD C3): the metric denominator is 50 phonemes, never multiplied by 3.
+  (PRD C3): the metric denominator is 48 phonemes, never multiplied by 3.
 
 ## Requirements
 
 | ID | Requirement | Acceptance | PRD |
 |---|---|---|---|
-| `REQ-001` | The chart covers the phoneme set of the reference booklet (ISBN 9787119061207), shown in print glyphs | The chart contains exactly 50 phonemes (24 vowels + 26 consonants) and carries a source label | R1 |
+| `REQ-001` | The chart covers the phoneme set of the reference booklet (ISBN 9787119061207), shown in print glyphs | The chart contains exactly 48 phonemes (24 vowels + 24 consonants) and carries a source label | R1 |
 | `REQ-002` | The chart is a 5-column grid grouped by phonetic category | 5 columns are visible; vowel groups (front/central/back) and consonant groups (by place) are distinguishable | R2 |
 | `REQ-003` | Three notation systems with switching | KK is the default; switching to DJ or IPA keeps the current phoneme selected | R3 |
 | `REQ-004` | Chart default state: tap opens the detail page | Tapping a symbol in the default chart state opens its detail page | R4 |

@@ -50,7 +50,7 @@ reads UI state and the content layer never imports domain types.
 
 - 5-column print-glyph grid grouped by phonetic category, last row
   left-aligned, no cross-group rows; narrow screens scroll horizontally or
-  scale, all 50 phonemes reachable (`REQ-001`, `REQ-002`, wireframe P1).
+  scale, all 48 phonemes reachable (`REQ-001`, `REQ-002`, wireframe P1).
 - Notation switch KK/DJ/IPA at the top, default KK, switching keeps the
   current phoneme, missing glyphs keep the previous notation (`REQ-003`,
   ADR-0001).
@@ -105,7 +105,7 @@ wireframe P3).
   (`REQ-022`, wireframe P5).
 - Every phoneme carries a 0–3 star rating shared across notations (ADR-0001);
   stars move strictly by the PRD product rules. Mastery statistics live in the
-  Me tab, filterable by notation, denominator always 50 (`REQ-023`).
+  Me tab, filterable by notation, denominator always 48 (`REQ-023`).
 
 ### §3.6 Content data model
 
@@ -141,7 +141,7 @@ wireframe P3).
   fixed missing-glyph copy per design-spec R27 (literal string, not yet a Copy
   key), never tofu.
 - **Small screens (`REQ-028`)**: 5-column grid scrolls horizontally or scales,
-  no clipping, no column wrap, all 50 phonemes reachable; every tappable area
+  no clipping, no column wrap, all 48 phonemes reachable; every tappable area
   ≥ 44 pt.
 - **Offline (`REQ-029`)**: phoneme data, notation mappings and word/sentence
   texts are local from install; audio follows ADR-0002; the practice flow has
