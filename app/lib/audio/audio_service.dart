@@ -27,5 +27,12 @@ abstract class AudioService {
 
 /// The default service for the running platform (Web Speech on the Web,
 /// an unsupported stub elsewhere until its batch lands).
+///
+/// Offline behaviour (B19, `REQ-029`, ux-flows R29): the whole app ships
+/// bundled data and makes no network request, and the Web provider
+/// synthesizes on device — with the network off the flows keep working and
+/// a synthesis failure degrades to the fixed failure links (the
+/// pronunciation retry state, the listening-task ladder) instead of
+/// blocking the page.
 AudioService createDefaultAudioService() =>
     provider.createPlatformAudioService();
