@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/content/correspondence.dart';
 import 'package:galatea/content/examples.dart';
+import 'package:galatea/content/glyphs.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/main.dart';
 
@@ -20,10 +21,12 @@ void main() {
     PhonemeCatalog? catalog;
     CorrespondenceTable? correspondence;
     ExamplesData? examples;
+    GlyphData? glyphs;
     await tester.runAsync(() async {
       catalog = await loadPhonemeCatalog();
       correspondence = await loadCorrespondence();
       examples = await loadExamples();
+      glyphs = await loadGlyphs();
     });
 
     await tester.pumpWidget(
@@ -33,6 +36,7 @@ void main() {
             ? Future.value(correspondence)
             : null,
         examplesFuture: examples != null ? Future.value(examples) : null,
+        glyphsFuture: glyphs != null ? Future.value(glyphs) : null,
       ),
     );
     await tester.pump();
