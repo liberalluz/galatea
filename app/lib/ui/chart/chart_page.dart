@@ -18,7 +18,10 @@ import '../detail/detail_page.dart';
 /// fixed hint line shows above the grid while the mode is on, and a failed
 /// playback shows the short failure notice without ever navigating.
 
-const Map<String, String> _kGroupTitles = {
+/// Chinese titles for the phonetic category groups, keyed by the catalog's
+/// `group` field. Shared with the practice range selection (`REQ-015`), so
+/// both screens label the same categories identically.
+const Map<String, String> kGroupTitles = {
   'front': '元音·前',
   'central': '元音·中',
   'back': '元音·后',
@@ -234,7 +237,7 @@ class _ChartPageState extends State<ChartPage> {
       Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 8),
         child: Text(
-          _kGroupTitles[group.key] ?? group.key,
+          kGroupTitles[group.key] ?? group.key,
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
