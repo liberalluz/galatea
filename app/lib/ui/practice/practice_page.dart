@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../content/phoneme_catalog.dart';
 import '../chart/chart_page.dart';
+import 'quiz_session.dart';
 
 /// Practice range selection (`REQ-015`, `TC-QUIZ-001`, wireframe P1 practice
 /// screenshot): a category tag row filters the phoneme set, the 5-column
@@ -27,6 +28,11 @@ class _PracticePageState extends State<PracticePage> {
   String _activeTag = _kAllTag;
   final Set<String> _selected = <String>{};
 
+  /// Whether the range is confirmed and the quiz session has taken over
+  /// the tab (`B12`): the confirm control swaps the selection grid for
+  /// the session view over the confirmed range.
+  bool _confirmed = false;
+
   void _selectTag(String tag) => setState(() => _activeTag = tag);
 
   void _toggle(String id) => setState(() {
@@ -34,6 +40,8 @@ class _PracticePageState extends State<PracticePage> {
   });
 
   void _clearFilter() => setState(() => _activeTag = _kAllTag);
+
+  void _confirm() => setState(() => _confirmed = true);
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +52,13 @@ class _PracticePageState extends State<PracticePage> {
           return const Center(child: CircularProgressIndicator());
         }
         final catalog = snapshot.data!;
+        if (_confirmed) {
+          return QuizSession(
+            range: catalog.entries
+                .where((entry) => _selected.contains(entry.id))
+                .toList(growable: false),
+          );
+        }
         final visible = catalog.entries
             .where(
               (entry) => _activeTag == _kAllTag || entry.group == _activeTag,
@@ -185,7 +200,7 @@ class _PracticePageState extends State<PracticePage> {
             ),
           FilledButton(
             key: const ValueKey('range-confirm'),
-            onPressed: gated ? null : () {},
+            onPressed: gated ? null : _confirm,
             child: const Text('确定'),
           ),
         ],
