@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/audio_service.dart';
+import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../content/spelling_options.dart';
 import '../../content/symbol_options.dart';
+import '../writing/tracing_canvas.dart';
+import '../writing/verdict.dart';
 
 /// Task data handed to a registered task builder: the current phoneme, the
 /// catalog (option sources), the audio service (listening stem) and the
@@ -15,6 +18,7 @@ class QuizTaskContext {
     required this.onAnswered,
     required this.onSkip,
     this.audioService,
+    this.glyphs,
   });
 
   final PhonemeCatalogEntry entry;
@@ -26,6 +30,10 @@ class QuizTaskContext {
   /// The audio layer backing the stem (B7, ADR-0002); the listening task
   /// renders the preparing state when it is absent.
   final AudioService? audioService;
+
+  /// The handwritten glyph data backing the writing stem (B10, ADR-0003);
+  /// the writing task renders the preparing state when it is absent.
+  final GlyphData? glyphs;
 
   /// The item counts as answered regardless of the verdict (PRD completion
   /// rule); the verdict rides along for the B17 mastery engine.
@@ -42,13 +50,14 @@ typedef QuizTaskBuilder = Widget Function(
   QuizTaskContext task,
 );
 
-/// The default task registry: the recognition task (`B13`) and the
-/// listening task (`B14`). B15–B16 register the remaining task types here
-/// without changing the shell.
+/// The default task registry: the recognition task (`B13`), the listening
+/// task (`B14`) and the writing task (`B15`). B16 registers the remaining
+/// task type here without changing the shell.
 const Map<String, QuizTaskBuilder> kDefaultQuizTasks =
     <String, QuizTaskBuilder>{
       'recognition': _buildRecognitionTask,
       'listening': _buildListeningTask,
+      'writing': _buildWritingTask,
     };
 
 /// Quiz session shell (`REQ-020`, `REQ-021`, `TC-QUIZ-006`, `TC-QUIZ-007`):
@@ -68,6 +77,7 @@ class QuizSession extends StatefulWidget {
     Map<String, QuizTaskBuilder>? tasks,
     this.taskType = 'recognition',
     this.audioService,
+    this.glyphs,
   }) : tasks = tasks ?? kDefaultQuizTasks;
 
   /// The confirmed range, in catalog order. The progress denominator.
@@ -90,6 +100,11 @@ class QuizSession extends StatefulWidget {
   /// state machine with a scripted fake; defaults to `null`, which the
   /// listening task renders as the preparing state.
   final AudioService? audioService;
+
+  /// The handwritten glyph data backing the writing stem (`B10`,
+  /// ADR-0003); handed to the task through [QuizTaskContext]. Defaults to
+  /// `null`, which the writing task renders as the preparing state.
+  final GlyphData? glyphs;
 
   @override
   State<QuizSession> createState() => _QuizSessionState();
@@ -199,6 +214,7 @@ class _QuizSessionState extends State<QuizSession> {
         onAnswered: _answer,
         onSkip: _skip,
         audioService: widget.audioService,
+        glyphs: widget.glyphs,
       ),
     );
   }
@@ -425,6 +441,119 @@ class _ListeningTaskBodyState extends State<_ListeningTaskBody> {
                 : () => widget.task.onAnswered(
                     _selected == widget.options.correct,
                   ),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The writing task (`REQ-018`, `TC-QUIZ-004`): the handwritten sample
+/// above and a blank tracing area below; submitting with strokes judges
+/// the trace under the recorded stroke-overlap threshold, submitting
+/// empty shows the trace-first hint without a verdict (ux-flows R18).
+/// Without the glyph data it renders the fixed preparing state.
+Widget _buildWritingTask(BuildContext context, QuizTaskContext task) {
+  final glyph = task.glyphs?.entries[task.entry.id];
+  if (glyph == null || glyph.strokes.isEmpty) {
+    return _buildPreparingState(context, task.onSkip);
+  }
+  return _WritingTaskBody(task: task, glyph: glyph);
+}
+
+class _WritingTaskBody extends StatefulWidget {
+  const _WritingTaskBody({required this.task, required this.glyph});
+
+  final QuizTaskContext task;
+  final PhonemeGlyph glyph;
+
+  @override
+  State<_WritingTaskBody> createState() => _WritingTaskBodyState();
+}
+
+class _WritingTaskBodyState extends State<_WritingTaskBody> {
+  final GlobalKey<TracingCanvasState> _canvasKey =
+      GlobalKey<TracingCanvasState>();
+
+  bool _hasStrokes = false;
+
+  /// The R18 trace-first guard: shown after an empty submit, cleared by
+  /// the first captured stroke.
+  bool _showTraceFirst = false;
+
+  void _onStrokesChanged(List<List<Offset>> strokes) {
+    setState(() {
+      _hasStrokes = strokes.isNotEmpty;
+      if (_hasStrokes) {
+        _showTraceFirst = false;
+      }
+    });
+  }
+
+  void _submit() {
+    if (!_hasStrokes) {
+      // ux-flows R18 failure branch: an empty submit is never judged ×;
+      // it shows the trace-first hint and stays unanswered.
+      setState(() => _showTraceFirst = true);
+      return;
+    }
+    final strokes = _canvasKey.currentState?.captured ?? const <List<Offset>>[];
+    widget.task.onAnswered(writingVerdict(widget.glyph.strokes, strokes));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // The handwritten sample (ux-flows R18 step 1): the model
+          // rendered clearly above the area.
+          Container(
+            key: const ValueKey('writing-sample'),
+            height: 140,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: CustomPaint(
+              painter: HandwritingPainter(
+                model: widget.glyph.strokes,
+                user: const <List<Offset>>[],
+                inkColor: Theme.of(context).colorScheme.onSurface,
+                modelColor: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // The blank tracing area (R18 step 2): the model is not drawn
+          // faintly inside — the empty state is "only sample and blank
+          // area".
+          TracingCanvas(
+            key: _canvasKey,
+            areaKey: const ValueKey('task-tracing-area'),
+            model: widget.glyph.strokes,
+            height: 220,
+            showModel: false,
+            onChanged: _onStrokesChanged,
+          ),
+          if (_showTraceFirst)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '请先在区域内描摹',
+                key: const ValueKey('trace-first'),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          const SizedBox(height: 16),
+          FilledButton(
+            key: const ValueKey('task-submit'),
+            onPressed: _submit,
             child: const Text('确定'),
           ),
         ],
