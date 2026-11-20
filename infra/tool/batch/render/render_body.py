@@ -11,6 +11,8 @@ file with fixed `## <slot>` headings:
   ## test-design      one paragraph: what the tests pin
   ## not-verified     bullet list: explicitly out of scope this batch
   ## risks            bullet list: judgement risks (tool-recorded risks are appended)
+  ## self-check       the scope qualifier after the batch line; the three
+                      Self-check lines themselves are fixed and not a slot
 
 Missing slots fall back to the built-in mechanical rendering, so a batch can
 ship a plain prepared body before its notes are written.
@@ -32,6 +34,7 @@ SLOTS = (
     "test-design",
     "not-verified",
     "risks",
+    "self-check",
 )
 
 
@@ -176,12 +179,26 @@ def render_risks(state: dict, notes: dict) -> list[str]:
     return out or ["- None recorded by the gate."]
 
 
-def render_self_check(card: dict) -> list[str]:
-    return [
-        "- One batch, one behaviour: the work stays inside this batch's allowed scope.",
-        "- Commit message passed `commit lint` (0 problems); `Why:` and `Batch:` trailers intact.",
-        "- No secrets, no build output in the diff.",
+def render_self_check(batch_id: str, notes: dict) -> list[str]:
+    """The fixed three-line Self-check shape.
+
+    The first line names the batch and, when the pr-notes `## self-check`
+    slot exists, carries the scope qualifier after an em dash; further slot
+    lines continue the batch line hard-wrapped. Without the slot the line
+    falls back to the bare `- Batch: <id>`, which still names the batch.
+    """
+    scope = paragraph(notes.get("self-check", []))
+    out = [f"- Batch: {batch_id} — {scope[0]}"] if scope else [
+        f"- Batch: {batch_id}"
     ]
+    out.extend(f"  {line}" for line in scope[1:])
+    out.extend(
+        [
+            "- Commit bodies carry Why: and Batch:: yes, checked by batch.py",
+            "- No secret or build output is committed: checked by batch.py",
+        ]
+    )
+    return out
 
 
 def main() -> int:
@@ -201,7 +218,7 @@ def main() -> int:
         "impact": lambda: render_impact(card, state, notes, root),
         "verification": lambda: render_verification(card, state, notes, root),
         "risks": lambda: render_risks(state, notes),
-        "self_check": lambda: render_self_check(card),
+        "self_check": lambda: render_self_check(args.batch, notes),
     }
     if args.section not in renderers:
         print(f"unknown section: {args.section}", file=sys.stderr)
