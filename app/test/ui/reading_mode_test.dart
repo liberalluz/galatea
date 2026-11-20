@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/audio/audio_service.dart';
 import 'package:galatea/content/correspondence.dart';
+import 'package:galatea/content/examples.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/main.dart';
 import 'package:galatea/ui/detail/detail_page.dart';
@@ -76,6 +77,13 @@ void main() {
             sourceLabel: 'test source',
             sourceRefs: const [],
             mappings: const [],
+          ),
+        ),
+        examplesFuture: Future<ExamplesData>.value(
+          ExamplesData(
+            version: 'test-v1',
+            sourceLabel: 'test source',
+            entries: const {},
           ),
         ),
         audioService: audio,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
+import '../../content/examples.dart';
 import '../../content/phoneme_catalog.dart';
 import '../chart/chart_page.dart';
 
@@ -14,12 +15,16 @@ class ShellPage extends StatefulWidget {
     super.key,
     this.catalogFuture,
     this.correspondenceFuture,
+    this.examplesFuture,
     this.audioService,
   });
 
   /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
   final Future<CorrespondenceTable>? correspondenceFuture;
+
+  /// Injectable example data (`B9`); production loads the bundled asset.
+  final Future<ExamplesData>? examplesFuture;
 
   /// Injectable audio service (ADR-0002 interface); defaults to the
   /// platform provider when omitted.
@@ -55,6 +60,7 @@ class _ShellPageState extends State<ShellPage> {
           ChartPage(
             catalogFuture: widget.catalogFuture,
             correspondenceFuture: widget.correspondenceFuture,
+            examplesFuture: widget.examplesFuture,
             audioService: widget.audioService,
             readingMode: _readingMode,
           ),

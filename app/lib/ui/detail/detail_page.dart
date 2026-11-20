@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/audio_service.dart';
+import '../../content/examples.dart';
 import '../../content/phoneme_catalog.dart';
 
 /// Detail page: the zone skeleton (audio -> mouth -> writing -> words) in the
@@ -11,7 +12,10 @@ import '../../content/phoneme_catalog.dart';
 /// at the ends the respective arrow is disabled and does not wrap
 /// (`TC-DETAIL-004`). The pronunciation button in the audio zone exposes the
 /// four fixed states loading / ready / playing / failed (`TC-DETAIL-001`);
-/// failures never disable the other sections.
+/// failures never disable the other sections. The mouth zone shows a
+/// mouth-shape slot (`REQ-007`) and the words zone a 2×2 grid of example
+/// cards (`REQ-010`); missing assets render fixed same-size placeholders and
+/// cards are never hidden (`TC-DETAIL-002`, `TC-CONTENT-003`).
 
 class DetailPage extends StatefulWidget {
   const DetailPage({
@@ -19,6 +23,7 @@ class DetailPage extends StatefulWidget {
     required this.catalog,
     required this.initialId,
     this.audioService,
+    this.examples,
   });
 
   /// The full catalog, so prev/next can walk the catalog order.
@@ -30,6 +35,10 @@ class DetailPage extends StatefulWidget {
   /// Injectable audio service (ADR-0002 interface); defaults to the
   /// platform provider when omitted.
   final AudioService? audioService;
+
+  /// Example word/sentence data (`B9`); when absent the slots render the
+  /// fixed placeholders.
+  final ExamplesData? examples;
 
   @override
   State<DetailPage> createState() => _DetailPageState();
@@ -119,6 +128,7 @@ class _DetailPageState extends State<DetailPage> {
             key: 'zone-mouth',
             label: '口型区',
             glyph: entry.printGlyph,
+            child: _mouthSlot(context, _examples),
           ),
           _zone(
             context,
@@ -131,6 +141,7 @@ class _DetailPageState extends State<DetailPage> {
             key: 'zone-words',
             label: '例词例句',
             glyph: entry.printGlyph,
+            child: _exampleGrid(context, _examples),
           ),
         ],
       ),
@@ -196,8 +207,8 @@ class _DetailPageState extends State<DetailPage> {
     );
   }
 
-  /// One zone of the fixed section order; later batches fill the zones with
-  /// the real features (B8+), the skeleton keeps the order stable.
+  /// One zone of the fixed section order; zones with real content (audio,
+  /// mouth, words) render their child, the rest keep the skeleton box.
   Widget _zone(
     BuildContext context, {
     required String key,
@@ -221,20 +232,152 @@ class _DetailPageState extends State<DetailPage> {
               ),
             ),
             const SizedBox(height: 12),
-            if (child != null) ...[child, const SizedBox(height: 12)],
-            Container(
-              height: 56,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline,
+            if (child != null)
+              child
+            else
+              Container(
+                height: 56,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                borderRadius: BorderRadius.circular(8),
               ),
-            ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
+    );
+  }
+
+  /// The current phoneme's example data; absent when the loader has not
+  /// delivered the data or the phoneme has no entry.
+  PhonemeExamples? get _examples => widget.examples?.entries[_entry.id];
+
+  /// The mouth-shape slot (`REQ-007`): the image when the asset exists, the
+  /// fixed `mouth-pending` placeholder at the same size otherwise — never a
+  /// blank area, never another phoneme's image (`TC-DETAIL-002`).
+  Widget _mouthSlot(BuildContext context, PhonemeExamples? data) {
+    final hasImage = data != null && data.mouth.isNotEmpty;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 140,
+        width: double.infinity,
+        child: hasImage
+            ? Image.asset(
+                data.mouth,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _mouthPending(context),
+              )
+            : _mouthPending(context),
+      ),
+    );
+  }
+
+  Widget _mouthPending(BuildContext context) {
+    final outline = Theme.of(context).colorScheme.outline;
+    return Container(
+      key: const ValueKey('mouth-pending'),
+      decoration: BoxDecoration(
+        border: Border.all(color: outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '口型图准备中',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: outline),
+      ),
+    );
+  }
+
+  /// The 2×2 example cards (`REQ-010`): image slot + word/sentence, no
+  /// translation; a missing image keeps the word/sentence visible and shows
+  /// the same-size placeholder — cards are never hidden (`TC-CONTENT-003`).
+  Widget _exampleGrid(BuildContext context, PhonemeExamples? data) {
+    final items = data?.examples ?? const <ExampleItem>[];
+    return GridView.count(
+      key: const ValueKey('example-grid'),
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 0.8,
+      children: [
+        for (var i = 0; i < 4; i++)
+          _exampleCard(context, i, i < items.length ? items[i] : null),
+      ],
+    );
+  }
+
+  Widget _exampleCard(BuildContext context, int index, ExampleItem? item) {
+    final outline = Theme.of(context).colorScheme.outline;
+    return Container(
+      key: ValueKey('example-card-$index'),
+      decoration: BoxDecoration(
+        border: Border.all(color: outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Expanded(child: _exampleImage(context, index, item)),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              item?.word ?? '',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              item?.sentence ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: outline),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The image slot of one card: the image when the asset exists, the fixed
+  /// same-size placeholder otherwise (`TC-CONTENT-003`).
+  Widget _exampleImage(BuildContext context, int index, ExampleItem? item) {
+    final hasImage = item != null && item.image.isNotEmpty;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox.expand(
+        child: hasImage
+            ? Image.asset(
+                item.image,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _imagePending(context, index),
+              )
+            : _imagePending(context, index),
+      ),
+    );
+  }
+
+  /// The fixed same-size image placeholder; the word/sentence stays visible
+  /// beside it and the card is never hidden (`TC-CONTENT-003`).
+  Widget _imagePending(BuildContext context, int index) {
+    final outline = Theme.of(context).colorScheme.outline;
+    return Container(
+      key: ValueKey('example-image-pending-$index'),
+      decoration: BoxDecoration(
+        border: Border.all(color: outline),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.image_outlined, color: outline),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/content/correspondence.dart';
+import 'package:galatea/content/examples.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/main.dart';
 
@@ -18,9 +19,11 @@ void main() {
 
     PhonemeCatalog? catalog;
     CorrespondenceTable? correspondence;
+    ExamplesData? examples;
     await tester.runAsync(() async {
       catalog = await loadPhonemeCatalog();
       correspondence = await loadCorrespondence();
+      examples = await loadExamples();
     });
 
     await tester.pumpWidget(
@@ -29,6 +32,7 @@ void main() {
         correspondenceFuture: correspondence != null
             ? Future.value(correspondence)
             : null,
+        examplesFuture: examples != null ? Future.value(examples) : null,
       ),
     );
     await tester.pump();
