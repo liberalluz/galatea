@@ -103,6 +103,7 @@ void main() {
     // in-memory store after a short timeout when no platform backend
     // answers; pump past the timeout so no timer is left pending.
     await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   Future<void> toggleReadingMode(WidgetTester tester) async {

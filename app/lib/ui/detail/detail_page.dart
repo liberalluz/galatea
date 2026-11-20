@@ -4,6 +4,7 @@ import '../../audio/audio_service.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../../domain/mastery_controller.dart';
 import '../writing/tracing_canvas.dart';
 
 /// Detail page: the zone skeleton (audio -> mouth -> writing -> words) in the
@@ -32,6 +33,7 @@ class DetailPage extends StatefulWidget {
     this.audioService,
     this.examples,
     this.glyphs,
+    this.mastery,
   });
 
   /// The full catalog, so prev/next can walk the catalog order.
@@ -51,6 +53,11 @@ class DetailPage extends StatefulWidget {
   /// Handwritten glyph and stroke-order data (`B10`, `ADR-0003`); when
   /// absent or missing an entry the writing zone shows the preparing state.
   final GlyphData? glyphs;
+
+  /// The shell-owned mastery controller (`B18`); when present the star
+  /// rating row shows under the phoneme id (ux-flows R23 entry, second
+  /// surface). `null` keeps the row absent.
+  final MasteryController? mastery;
 
   @override
   State<DetailPage> createState() => _DetailPageState();
@@ -180,6 +187,10 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
           Center(
             child: Text(entry.id, style: Theme.of(context).textTheme.bodyLarge),
           ),
+          if (widget.mastery != null) ...[
+            const SizedBox(height: 8),
+            _starRow(context, widget.mastery!),
+          ],
           const SizedBox(height: 16),
           _zone(
             context,
@@ -275,6 +286,47 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
 
   /// One zone of the fixed section order; zones with real content (audio,
   /// mouth, words) render their child, the rest keep the skeleton box.
+  /// The star rating row (`B18`, ux-flows R23 entry surface 2): the
+  /// phoneme's shared 0–3 stars with the mastery label; a degraded
+  /// controller shows 0 stars plus the fixed 数据待同步 marker instead of
+  /// presenting values that may not reflect persisted data (the R23
+  /// failure branch — never inventing stars).
+  Widget _starRow(BuildContext context, MasteryController mastery) {
+    return ListenableBuilder(
+      listenable: mastery,
+      builder: (context, _) {
+        final star = mastery.degraded
+            ? 0
+            : (mastery.engine.state.entries[_entry.id]?.star ?? 0);
+        final label = switch (star) {
+          >= 3 => '已掌握',
+          >= 1 => '学习中',
+          _ => '未掌握',
+        };
+        return Column(
+          children: [
+            Row(
+              key: const ValueKey('detail-star'),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < 3; i++)
+                  Icon(i < star ? Icons.star : Icons.star_border, size: 20),
+                const SizedBox(width: 8),
+                Text(label, style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            if (mastery.degraded)
+              const Text(
+                '数据待同步',
+                key: ValueKey('star-degraded'),
+                style: TextStyle(color: Color(0xFF5F6368), fontSize: 12),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _zone(
     BuildContext context, {
     required String key,

@@ -5,6 +5,7 @@ import '../../content/correspondence.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../../domain/mastery_controller.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
 
@@ -50,6 +51,7 @@ class ChartPage extends StatefulWidget {
     this.glyphsFuture,
     this.audioService,
     this.readingMode = false,
+    this.mastery,
   });
 
   /// Injectable for widget tests; production loads the bundled assets.
@@ -69,6 +71,10 @@ class ChartPage extends StatefulWidget {
   /// Reading mode (`REQ-005`): owned by the shell's top-right switch; on,
   /// grid taps play audio and stay; off, they navigate to detail.
   final bool readingMode;
+
+  /// The shell-owned mastery controller (`B18`); handed to the detail
+  /// page for the star rating row. `null` keeps the row absent.
+  final MasteryController? mastery;
 
   @override
   State<ChartPage> createState() => _ChartPageState();
@@ -311,6 +317,7 @@ class _ChartPageState extends State<ChartPage> {
                 initialId: entry.id,
                 examples: examples,
                 glyphs: glyphData,
+                mastery: widget.mastery,
               ),
             ),
           );

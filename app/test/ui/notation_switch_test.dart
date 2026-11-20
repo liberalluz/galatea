@@ -41,6 +41,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
+    // The shell's mastery load degrades to the in-memory store after the
+    // 150 ms timeout in a test environment; one more pump rebuilds the
+    // body once the future settles.
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   testWidgets('first launch shows KK as the default notation', (tester) async {
@@ -115,6 +119,10 @@ void main() {
     await tester.tap(find.text('IPA'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
+    // The shell's mastery load degrades to the in-memory store after the
+    // 150 ms timeout in a test environment; one more pump rebuilds the
+    // body once the future settles.
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       find.descendant(
