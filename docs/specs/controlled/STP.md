@@ -22,8 +22,8 @@ Pass/fail follows the observable exits below; "works" is never an exit.
 
 | Test | Covers | Exit |
 |---|---|---|
-| `TC-CHART-001` | `REQ-001` | Chart data contains exactly 50 phoneme entries and the chart page shows the source label. |
-| `TC-CHART-002` | `REQ-002` | Grid renders 5 columns; each of the 50 phonemes appears once inside its category group. |
+| `TC-CHART-001` | `REQ-001` | Chart data contains exactly 48 phoneme entries and the chart page shows the source label. |
+| `TC-CHART-002` | `REQ-002` | Grid renders 5 columns; each of the 48 phonemes appears once inside its category group. |
 | `TC-CHART-003` | `REQ-003` | First launch shows KK as default; switching to DJ and IPA re-renders the symbols while the current phoneme stays selected. |
 | `TC-CHART-004` | `REQ-004` | With reading mode off, tapping a symbol navigates to its detail page. |
 | `TC-CHART-005` | `REQ-005` | With reading mode on, tapping a symbol plays its audio, stays on the chart, and the status hint line is visible. |
@@ -44,7 +44,7 @@ Pass/fail follows the observable exits below; "works" is never an exit.
 | `TC-QUIZ-006` | `REQ-020` | The progress bar advances with each answered item and the range label in the top-right matches the selected range. |
 | `TC-QUIZ-007` | `REQ-021` | Feedback appears immediately after confirm; the reported completion rate equals in-range phonemes answered ≥ 1 time ÷ in-range phonemes. |
 | `TC-REVIEW-001` | `REQ-022` | A wrong answer lowers the star by 1 and places the phoneme in the review queue at the interval given by the PRD product rules; a correct review answer advances the interval, a wrong one resets it. |
-| `TC-REVIEW-002` | `REQ-023` | Every phoneme carries a 0–3 star rating that is identical across KK/DJ/IPA; the Me tab statistics filter by notation with denominator 50. |
+| `TC-REVIEW-002` | `REQ-023` | Every phoneme carries a 0–3 star rating that is identical across KK/DJ/IPA; the Me tab statistics filter by notation with denominator 48. |
 | `TC-PLATFORM-001` | `REQ-024` | The Flutter Web build serves and runs the chart, detail, practice and review flows of this plan end-to-end in a browser. |
 | `TBD` | `REQ-025` | iOS functional confirmation is verified with the v0.2.0 build; recorded gap for this slice. |
 | `TC-DOC-001` | `REQ-026` | Every controlled document exists as bare source plus `.zh-CN.md` translation with identical ids, and `check_language.py --root .` reports 0 errors. |
