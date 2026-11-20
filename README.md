@@ -37,7 +37,7 @@ being specified against the product definition; nothing is runnable yet.
 |---|---|
 | Requirements and design specs | [docs/specs/](docs/specs/) |
 | Decisions | [docs/decisions/](docs/decisions/) |
-| Git conventions | [docs/specs/git-conventions.md](docs/specs/git-conventions.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## Contributing
 

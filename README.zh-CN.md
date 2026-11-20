@@ -34,7 +34,7 @@
 |---|---|
 | 需求与设计规范 | [docs/specs/](docs/specs/) |
 | 决策记录 | [docs/decisions/](docs/decisions/) |
-| Git 约定 | [docs/specs/git-conventions.md](docs/specs/git-conventions.md) |
+| 贡献指南 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ## 参与贡献
 
