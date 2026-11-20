@@ -6,6 +6,7 @@ import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
 import '../chart/chart_page.dart';
+import '../practice/practice_page.dart';
 
 /// Root shell: three fixed tabs (chart / practice / me), chart is the default
 /// (`S3`, wireframe P0). The reading-mode switch sits at the top right of the
@@ -70,7 +71,7 @@ class _ShellPageState extends State<ShellPage> {
             audioService: widget.audioService,
             readingMode: _readingMode,
           ),
-          const PlaceholderTab(label: '练习'),
+          PracticePage(catalogFuture: widget.catalogFuture),
           const PlaceholderTab(label: '我'),
         ],
       ),
