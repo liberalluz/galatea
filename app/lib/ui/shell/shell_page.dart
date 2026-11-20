@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../content/correspondence.dart';
 import '../../content/phoneme_catalog.dart';
 import '../chart/chart_page.dart';
 
 /// Root shell: three fixed tabs (chart / practice / me), chart is the default
 /// (`S3`, wireframe P0). Practice and me are placeholders for later batches.
 class ShellPage extends StatefulWidget {
-  const ShellPage({super.key, this.catalogFuture});
+  const ShellPage({super.key, this.catalogFuture, this.correspondenceFuture});
 
-  /// Injectable for widget tests; production loads the bundled asset.
+  /// Injectable for widget tests; production loads the bundled assets.
   final Future<PhonemeCatalog>? catalogFuture;
+  final Future<CorrespondenceTable>? correspondenceFuture;
 
   @override
   State<ShellPage> createState() => _ShellPageState();
@@ -27,7 +29,10 @@ class _ShellPageState extends State<ShellPage> {
       body: IndexedStack(
         index: _index,
         children: [
-          ChartPage(catalogFuture: widget.catalogFuture),
+          ChartPage(
+            catalogFuture: widget.catalogFuture,
+            correspondenceFuture: widget.correspondenceFuture,
+          ),
           const PlaceholderTab(label: '练习'),
           const PlaceholderTab(label: '我'),
         ],

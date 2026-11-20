@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:galatea/content/correspondence.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/main.dart';
 
@@ -8,20 +9,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   /// Tall test viewport so the lazy ListView builds every category group.
-  /// The catalog is loaded via [tester.runAsync] (real async IO) and injected,
-  /// so the grid renders deterministically inside the fake-async test zone.
+  /// The catalog and correspondence table are loaded via [tester.runAsync]
+  /// (real async IO) and injected, so the grid renders deterministically
+  /// inside the fake-async test zone.
   Future<void> pumpApp(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 12000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     PhonemeCatalog? catalog;
+    CorrespondenceTable? correspondence;
     await tester.runAsync(() async {
       catalog = await loadPhonemeCatalog();
+      correspondence = await loadCorrespondence();
     });
 
     await tester.pumpWidget(
-      GalateaApp(catalogFuture: catalog != null ? Future.value(catalog) : null),
+      GalateaApp(
+        catalogFuture: catalog != null ? Future.value(catalog) : null,
+        correspondenceFuture: correspondence != null
+            ? Future.value(correspondence)
+            : null,
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
