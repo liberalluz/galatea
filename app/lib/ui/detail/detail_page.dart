@@ -4,6 +4,7 @@ import '../../audio/audio_service.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../writing/tracing_canvas.dart';
 
 /// Detail page: the zone skeleton (audio -> mouth -> writing -> words) in the
 /// fixed section order (`wireframe P3`, `SDD` layout) with the horizontal
@@ -60,10 +61,15 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     (entry) => entry.id == widget.initialId,
   );
 
-  /// Strokes drawn by the pointer, normalized to the tracing area
-  /// (`TC-TRACE-001`); kept when input is interrupted, cleared only by the
-  /// clear control or a phoneme switch.
-  final List<List<Offset>> _userStrokes = <List<Offset>>[];
+  /// The shared tracing canvas state; the user strokes live inside the
+  /// component and are cleared from here on phoneme switches
+  /// (`TC-TRACE-001`).
+  final GlobalKey<TracingCanvasState> _canvasKey =
+      GlobalKey<TracingCanvasState>();
+
+  /// Whether the canvas currently holds user strokes; drives the trace
+  /// hint and the clear control.
+  bool _hasStrokes = false;
 
   /// Whether the stroke-order animation is playing (`REQ-009`).
   bool _playing = false;
@@ -71,10 +77,6 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   late final AnimationController _playController = AnimationController(
     vsync: this,
   )..addStatusListener(_onPlayStatus);
-
-  /// The render box of the tracing area; pointer positions normalize
-  /// against it, not the whole page.
-  final GlobalKey _tracingKey = GlobalKey();
 
   late final AudioService _audio =
       widget.audioService ?? createDefaultAudioService();
@@ -137,7 +139,8 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   /// A phoneme switch resets the writing zone: user strokes and the
   /// stroke-order playback never carry over (`TC-TRACE-002`).
   void _resetWriting() {
-    _userStrokes.clear();
+    _canvasKey.currentState?.clear();
+    _hasStrokes = false;
     _playing = false;
     _playController.reset();
   }
@@ -318,6 +321,8 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   /// The writing zone (`REQ-008`, `REQ-009`): the tracing area over the
   /// handwritten glyph plus the stroke-order control. The control's
   /// preparing state is independent of the tracing area (`TC-TRACE-002`).
+  /// The area is the shared tracing canvas (`B15`): capture and rendering
+  /// have one source; the zone adds the hint overlay and the playback.
   Widget _writingZone(BuildContext context) {
     final outline = Theme.of(context).colorScheme.outline;
     final glyph = _glyph;
@@ -326,36 +331,19 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
       children: [
         Stack(
           children: [
-            GestureDetector(
-              onPanStart: (details) => _startStroke(details.localPosition),
-              onPanUpdate: (details) => _extendStroke(details.localPosition),
-              child: SizedBox(
-                key: const ValueKey('tracing-area'),
-                height: 200,
-                width: double.infinity,
-                child: Container(
-                  key: _tracingKey,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: AnimatedBuilder(
-                    animation: _playController,
-                    builder: (context, _) => CustomPaint(
-                      painter: _HandwritingPainter(
-                        model: glyph?.strokes ?? const <List<Offset>>[],
-                        user: _userStrokes,
-                        played: _playing ? _playedStroke() : -1,
-                        fraction: _playing ? _playController.value : 0,
-                        inkColor: Theme.of(context).colorScheme.primary,
-                        modelColor: outline,
-                      ),
-                    ),
-                  ),
-                ),
+            AnimatedBuilder(
+              animation: _playController,
+              builder: (context, _) => TracingCanvas(
+                key: _canvasKey,
+                areaKey: const ValueKey('tracing-area'),
+                model: glyph?.strokes ?? const <List<Offset>>[],
+                playedStroke: _playing ? _playedStroke() : -1,
+                playFraction: _playing ? _playController.value : 0,
+                onChanged: (strokes) =>
+                    setState(() => _hasStrokes = strokes.isNotEmpty),
               ),
             ),
-            if (_userStrokes.isEmpty)
+            if (!_hasStrokes)
               Positioned.fill(
                 child: IgnorePointer(
                   child: Center(
@@ -375,9 +363,9 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
           children: [
             TextButton.icon(
               key: const ValueKey('writing-clear'),
-              onPressed: _userStrokes.isEmpty
+              onPressed: !_hasStrokes
                   ? null
-                  : () => setState(_userStrokes.clear),
+                  : () => _canvasKey.currentState?.clear(),
               icon: const Icon(Icons.restart_alt),
               label: const Text('清除'),
             ),
@@ -435,42 +423,6 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
       return -1;
     }
     return (_playController.value * count).floor().clamp(0, count - 1);
-  }
-
-  void _startStroke(Offset localPosition) {
-    final box = _tracingKey.currentContext!.findRenderObject()! as RenderBox;
-    final size = box.size;
-    setState(() {
-      _userStrokes.add([
-        Offset(
-          (localPosition.dx / size.width).clamp(0.0, 1.0),
-          (localPosition.dy / size.height).clamp(0.0, 1.0),
-        ),
-      ]);
-    });
-  }
-
-  void _extendStroke(Offset localPosition) {
-    final box = _tracingKey.currentContext!.findRenderObject()! as RenderBox;
-    final size = box.size;
-    if (_userStrokes.isEmpty) {
-      return;
-    }
-    final stroke = _userStrokes.last;
-    final point = Offset(
-      (localPosition.dx / size.width).clamp(0.0, 1.0),
-      (localPosition.dy / size.height).clamp(0.0, 1.0),
-    );
-    // Skip jitter points that add no movement (a stroke of one dot cannot
-    // render a polyline).
-    final last = stroke.last;
-    final scale = size.shortestSide;
-    if ((point - last).distance * scale < 1.5) {
-      return;
-    }
-    setState(() {
-      _userStrokes[_userStrokes.length - 1] = [...stroke, point];
-    });
   }
 
   /// The current phoneme's example data; absent when the loader has not
@@ -630,97 +582,4 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     };
     return Center(child: child);
   }
-}
-
-/// Paints the handwritten model faintly, the pointer strokes in ink and,
-/// while the stroke-order animation plays, the model strokes progressively
-/// up to the playback progress (`REQ-009`, `ADR-0003`).
-class _HandwritingPainter extends CustomPainter {
-  _HandwritingPainter({
-    required this.model,
-    required this.user,
-    required this.played,
-    required this.fraction,
-    required this.inkColor,
-    required this.modelColor,
-  });
-
-  final List<List<Offset>> model;
-  final List<List<Offset>> user;
-  final int played;
-  final double fraction;
-  final Color inkColor;
-  final Color modelColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final modelPaint = Paint()
-      ..color = modelColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final inkPaint = Paint()
-      ..color = inkColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    Path polyline(List<Offset> stroke, [double until = 1]) {
-      final path = Path();
-      var total = 0.0;
-      final scaled = [
-        for (final p in stroke) Offset(p.dx * size.width, p.dy * size.height),
-      ];
-      for (var i = 1; i < scaled.length; i++) {
-        total += (scaled[i] - scaled[i - 1]).distance;
-      }
-      var budget = until * total;
-      for (var i = 0; i < scaled.length; i++) {
-        if (i == 0) {
-          path.moveTo(scaled[0].dx, scaled[0].dy);
-          continue;
-        }
-        final segment = (scaled[i] - scaled[i - 1]).distance;
-        if (segment <= budget || until >= 1) {
-          budget -= segment;
-          path.lineTo(scaled[i].dx, scaled[i].dy);
-        } else {
-          final t = budget / segment;
-          final tip = Offset.lerp(scaled[i - 1], scaled[i], t) ?? scaled[i - 1];
-          path.lineTo(tip.dx, tip.dy);
-          break;
-        }
-      }
-      return path;
-    }
-
-    // The faint complete model is the static preview (ux-flows empty state
-    // of the stroke-order flow); the ink shows the playback progress.
-    for (final stroke in model) {
-      canvas.drawPath(polyline(stroke), modelPaint);
-    }
-    for (var i = 0; i < model.length; i++) {
-      if (played < 0) {
-        break;
-      }
-      if (i < played) {
-        canvas.drawPath(polyline(model[i]), inkPaint);
-      } else if (i == played) {
-        canvas.drawPath(polyline(model[i], fraction), inkPaint);
-        break;
-      }
-    }
-    for (final stroke in user) {
-      canvas.drawPath(polyline(stroke), inkPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HandwritingPainter oldDelegate) =>
-      oldDelegate.played != played ||
-      oldDelegate.fraction != fraction ||
-      oldDelegate.user != user ||
-      oldDelegate.model != model;
 }
