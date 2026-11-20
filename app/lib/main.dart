@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'content/phoneme_catalog.dart';
+import 'ui/shell/shell_page.dart';
+
 void main() {
   runApp(const GalateaApp());
 }
 
-/// Root of the v0.1.0 shell: a placeholder page that later batches grow the
-/// chart, detail, practice, and me tabs into.
+/// Root of the Galatea app: the shell hosts the three fixed tabs; the chart
+/// page grows in from B4.
 class GalateaApp extends StatelessWidget {
-  const GalateaApp({super.key});
+  const GalateaApp({super.key, this.catalogFuture});
+
+  /// Injectable for widget tests; production loads the bundled asset.
+  final Future<PhonemeCatalog>? catalogFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -15,20 +21,9 @@ class GalateaApp extends StatelessWidget {
       title: 'Galatea',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        useMaterial3: true,
       ),
-      home: const ShellPage(),
-    );
-  }
-}
-
-class ShellPage extends StatelessWidget {
-  const ShellPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Galatea')),
-      body: const Center(child: Text('Galatea v0.1.0 shell')),
+      home: ShellPage(catalogFuture: catalogFuture),
     );
   }
 }
