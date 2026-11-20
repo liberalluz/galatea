@@ -1611,6 +1611,9 @@ def _run_check(
         code = proc.returncode
     except subprocess.TimeoutExpired:
         status, output, code = "fail", f"timeout after {timeout}s", 124
+    except FileNotFoundError:
+        executable = command if isinstance(command, str) else command[0]
+        status, output, code = "fail", f"command not found: {executable}", 127
     return name, {"status": status, "exit": code, "at": utc_now()}, output
 
 
@@ -2941,6 +2944,18 @@ def pr_body(root: Path, batch_id: str) -> str:
             [f"- {item}" for item in criteria] or ["- none recorded"]
         )
 
+    unfilled = [
+        str(section["heading"])
+        for section in spec["sections"]
+        if str(section["key"]) not in content
+    ]
+    if unfilled:
+        names = ", ".join(f"## {heading}" for heading in unfilled)
+        raise SystemExit(
+            f"pr: {names} has no filler; add 'render: [<command>]' to that "
+            f"section in {BODY_SPEC_REL.as_posix()} or remove the section"
+        )
+
     lines: list[str] = []
     for index, section in enumerate(spec["sections"]):
         if index:
@@ -3497,7 +3512,11 @@ def cmd_pr(args: argparse.Namespace) -> int:
             return 2
         payload = source.read_text(encoding="utf-8")
     else:
-        payload = pr_body(root, batch_id) + "\n"
+        try:
+            payload = pr_body(root, batch_id) + "\n"
+        except SystemExit as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
     recorded_digest = str(state.get("pr_body_sha256") or "")
     if args.create and source is None and not args.body_file and recorded_digest:
         recorded_path = root / str(state.get("pr_body") or "")
@@ -4111,14 +4130,21 @@ def cmd_verify_merge(args: argparse.Namespace) -> int:
     _, body, _ = run_git(root, ["log", "-1", "--format=%B", commit])
     problems: list[str] = []
     warnings: list[str] = []
-    expected = str(state.get("pr_title") or "").strip()
-    if expected and subject.strip() != expected:
-        problems.append(
-            f"subject is {subject.strip()!r}, expected {expected!r}"
-        )
     numbers = [str(item) for item in state.get("prs", [])]
     if state.get("pr") and str(state["pr"]) not in numbers:
         numbers.insert(0, str(state["pr"]))
+    expected = str(state.get("pr_title") or "").strip()
+    merged_subject = subject.strip()
+    if expected and merged_subject != expected:
+        suffix = re.search(r"^(?P<title>.*?)\s*\(#(?P<number>\d+)\)$", merged_subject)
+        if not (
+            suffix
+            and suffix.group("title").strip() == expected
+            and suffix.group("number") in numbers
+        ):
+            problems.append(
+                f"subject is {merged_subject!r}, expected {expected!r}"
+            )
     combined = f"{subject}\n{body}"
     for number in numbers:
         if f"#{number}" not in combined:
@@ -4212,9 +4238,17 @@ def cmd_merge(args: argparse.Namespace) -> int:
             f"merged {batch_id} externally (PR {', '.join(state['prs'])}){suffix}"
         )
         return 0
-    if status != "pr_created":
+    numbers = [str(item) for item in state.get("prs", [])]
+    if status != "pr_created" and not numbers:
         print("batch has no created PR", file=sys.stderr)
         return 1
+    recorded_pr = args.pr or (numbers[-1] if numbers else "")
+    if status != "pr_created":
+        print(
+            f"merging {batch_id} through its recorded PR #{recorded_pr} "
+            f"(status {status})",
+            file=sys.stderr,
+        )
     code, out, err = run_hook(
         root,
         command,
@@ -4224,7 +4258,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
             "body": "",
             "branch": str(state.get("branch", "")),
             "root": str(root),
-            "pr": args.pr,
+            "pr": recorded_pr,
         },
     )
     if out:
@@ -4238,7 +4272,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         print(f"warning: merged commit: {item}", file=sys.stderr)
     state["status"] = "merged"
     state["merged_at"] = utc_now()
-    record_pr(state, args.pr)
+    record_pr(state, recorded_pr)
     for extra in getattr(args, "also_pr", None) or []:
         record_pr(state, extra)
     write_json(batch_dir(root, batch_id) / "state.json", state)
