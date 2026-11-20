@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../audio/audio_service.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../content/spelling_options.dart';
+import '../../content/symbol_options.dart';
 
 /// Task data handed to a registered task builder: the current phoneme, the
-/// catalog (option sources) and the session callbacks.
+/// catalog (option sources), the audio service (listening stem) and the
+/// session callbacks.
 class QuizTaskContext {
   const QuizTaskContext({
     required this.entry,
     required this.catalog,
     required this.onAnswered,
     required this.onSkip,
+    this.audioService,
   });
 
   final PhonemeCatalogEntry entry;
@@ -18,6 +22,10 @@ class QuizTaskContext {
   /// The catalog backing the task options; a task that needs it renders
   /// the preparing state when it is absent.
   final PhonemeCatalog? catalog;
+
+  /// The audio layer backing the stem (B7, ADR-0002); the listening task
+  /// renders the preparing state when it is absent.
+  final AudioService? audioService;
 
   /// The item counts as answered regardless of the verdict (PRD completion
   /// rule); the verdict rides along for the B17 mastery engine.
@@ -34,10 +42,14 @@ typedef QuizTaskBuilder = Widget Function(
   QuizTaskContext task,
 );
 
-/// The default task registry: the recognition task (`B13`). B14–B16
-/// register the remaining task types here without changing the shell.
+/// The default task registry: the recognition task (`B13`) and the
+/// listening task (`B14`). B15–B16 register the remaining task types here
+/// without changing the shell.
 const Map<String, QuizTaskBuilder> kDefaultQuizTasks =
-    <String, QuizTaskBuilder>{'recognition': _buildRecognitionTask};
+    <String, QuizTaskBuilder>{
+      'recognition': _buildRecognitionTask,
+      'listening': _buildListeningTask,
+    };
 
 /// Quiz session shell (`REQ-020`, `REQ-021`, `TC-QUIZ-006`, `TC-QUIZ-007`):
 /// the progress bar advances per answered item and completes when every
@@ -55,6 +67,7 @@ class QuizSession extends StatefulWidget {
     this.catalog,
     Map<String, QuizTaskBuilder>? tasks,
     this.taskType = 'recognition',
+    this.audioService,
   }) : tasks = tasks ?? kDefaultQuizTasks;
 
   /// The confirmed range, in catalog order. The progress denominator.
@@ -68,9 +81,15 @@ class QuizSession extends StatefulWidget {
   /// registry with the recognition task.
   final Map<String, QuizTaskBuilder> tasks;
 
-  /// The task type to render; B14–B16 extend the registry beyond the
-  /// recognition task.
+  /// The task type to render; B14 registers the listening task, B15–B16
+  /// extend the registry beyond these two.
   final String taskType;
+
+  /// The audio layer backing the listening stem (`B7`, ADR-0002); handed
+  /// to the task through [QuizTaskContext]. Injectable so tests pin the
+  /// state machine with a scripted fake; defaults to `null`, which the
+  /// listening task renders as the preparing state.
+  final AudioService? audioService;
 
   @override
   State<QuizSession> createState() => _QuizSessionState();
@@ -179,6 +198,7 @@ class _QuizSessionState extends State<QuizSession> {
         catalog: widget.catalog,
         onAnswered: _answer,
         onSkip: _skip,
+        audioService: widget.audioService,
       ),
     );
   }
@@ -256,6 +276,130 @@ class _RecognitionTaskBodyState extends State<_RecognitionTaskBody> {
             entry.printGlyph,
             key: ValueKey('task-stem-${entry.id}'),
             style: Theme.of(context).textTheme.displayMedium,
+          ),
+          const SizedBox(height: 24),
+          for (final option in widget.options.options)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: OutlinedButton(
+                key: ValueKey('task-option-$option'),
+                onPressed: () => setState(() => _selected = option),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: _selected == option
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
+                  minimumSize: const Size(200, 48),
+                ),
+                child: Text(option),
+              ),
+            ),
+          const SizedBox(height: 16),
+          FilledButton(
+            key: const ValueKey('task-submit'),
+            onPressed: _selected == null
+                ? null
+                : () => widget.task.onAnswered(
+                    _selected == widget.options.correct,
+                  ),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The listening task (`REQ-017`, `TC-QUIZ-003`): the audio stem with
+/// exactly 2 symbol options, exactly 1 correct; the selected option
+/// highlights before confirm. Without the audio service or with fewer than
+/// 2 distinct glyphs it renders the fixed preparing state.
+Widget _buildListeningTask(BuildContext context, QuizTaskContext task) {
+  final catalog = task.catalog;
+  final audio = task.audioService;
+  final options = catalog == null
+      ? null
+      : buildSymbolOptions(task.entry, catalog);
+  if (audio == null || options == null) {
+    return _buildPreparingState(context, task.onSkip);
+  }
+  return _ListeningTaskBody(task: task, audio: audio, options: options);
+}
+
+class _ListeningTaskBody extends StatefulWidget {
+  const _ListeningTaskBody({
+    required this.task,
+    required this.audio,
+    required this.options,
+  });
+
+  final QuizTaskContext task;
+  final AudioService audio;
+  final SymbolOptions options;
+
+  @override
+  State<_ListeningTaskBody> createState() => _ListeningTaskBodyState();
+}
+
+class _ListeningTaskBodyState extends State<_ListeningTaskBody> {
+  String? _selected;
+
+  /// The R17 failure ladder: the first playback failure offers replay,
+  /// a repeated failure offers the skip control.
+  int _failures = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.audio.state.addListener(_onStateChanged);
+  }
+
+  @override
+  void didUpdateWidget(_ListeningTaskBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audio != widget.audio) {
+      oldWidget.audio.state.removeListener(_onStateChanged);
+      widget.audio.state.addListener(_onStateChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.audio.state.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  /// `ValueNotifier` only notifies on changes, so each transition into the
+  /// failed state counts exactly one ladder step.
+  void _onStateChanged() {
+    setState(() {
+      if (widget.audio.state.value == AudioPlaybackState.failed) {
+        _failures += 1;
+      }
+    });
+  }
+
+  void _play() {
+    final entry = widget.task.entry;
+    widget.audio.play(entry.id, entry.tts);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failures >= 2) {
+      // ux-flows R17 repeated failure: do not stall practice; the item is
+      // not marked answered.
+      return _buildPreparingState(context, widget.task.onSkip);
+    }
+    final failed = _failures >= 1;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          OutlinedButton(
+            key: ValueKey(failed ? 'task-audio-retry' : 'task-audio-play'),
+            onPressed: _play,
+            child: Text(failed ? '重试' : '播放'),
           ),
           const SizedBox(height: 24),
           for (final option in widget.options.options)
