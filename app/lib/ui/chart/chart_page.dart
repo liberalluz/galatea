@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../content/correspondence.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../domain/notation.dart';
+import '../detail/detail_page.dart';
 
 /// Chart page: 5-column print-glyph grid grouped by phonetic category
 /// (`REQ-002`, wireframe P1). A notation switch (KK / DJ / IPA) sits above
@@ -98,7 +99,7 @@ class _ChartPageState extends State<ChartPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   for (final group in _groupedEntries(catalog.entries))
-                    ..._groupWidgets(context, group, glyphs),
+                    ..._groupWidgets(context, group, glyphs, catalog),
                   const SizedBox(height: 16),
                   Text(
                     '来源：${catalog.sourceLabel}',
@@ -128,6 +129,7 @@ class _ChartPageState extends State<ChartPage> {
     BuildContext context,
     MapEntry<String, List<PhonemeCatalogEntry>> group,
     Map<String, String> glyphs,
+    PhonemeCatalog catalog,
   ) {
     return [
       Padding(
@@ -137,7 +139,7 @@ class _ChartPageState extends State<ChartPage> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
-      _groupTable(context, group.value, glyphs),
+      _groupTable(context, group.value, glyphs, catalog),
     ];
   }
 
@@ -145,6 +147,7 @@ class _ChartPageState extends State<ChartPage> {
     BuildContext context,
     List<PhonemeCatalogEntry> entries,
     Map<String, String> glyphs,
+    PhonemeCatalog catalog,
   ) {
     const columns = 5;
     final rows = <TableRow>[];
@@ -155,7 +158,12 @@ class _ChartPageState extends State<ChartPage> {
       );
       final cells = <Widget>[
         for (final entry in chunk)
-          _glyphCell(context, entry, glyphs[entry.id] ?? entry.printGlyph),
+          _glyphCell(
+            context,
+            entry,
+            glyphs[entry.id] ?? entry.printGlyph,
+            catalog,
+          ),
         // Pad the last row so it stays left-aligned inside the 5-column grid.
         for (var pad = chunk.length; pad < columns; pad++) const SizedBox(),
       ];
@@ -171,6 +179,7 @@ class _ChartPageState extends State<ChartPage> {
     BuildContext context,
     PhonemeCatalogEntry entry,
     String glyph,
+    PhonemeCatalog catalog,
   ) {
     final selected = _selectedId == entry.id;
     return Padding(
@@ -182,7 +191,9 @@ class _ChartPageState extends State<ChartPage> {
             _selectedId = entry.id;
           });
           Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => DetailPage(entry: entry)),
+            MaterialPageRoute<void>(
+              builder: (_) => DetailPage(catalog: catalog, initialId: entry.id),
+            ),
           );
         },
         borderRadius: BorderRadius.circular(8),
@@ -199,34 +210,6 @@ class _ChartPageState extends State<ChartPage> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: Text(glyph, style: Theme.of(context).textTheme.titleLarge),
-        ),
-      ),
-    );
-  }
-}
-
-/// Detail placeholder: later batches grow this into the detail shell (B6).
-class DetailPage extends StatelessWidget {
-  const DetailPage({super.key, required this.entry});
-
-  final PhonemeCatalogEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(entry.printGlyph)),
-      body: Center(
-        key: const ValueKey('detail-page'),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              entry.printGlyph,
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(entry.id, style: Theme.of(context).textTheme.bodyLarge),
-          ],
         ),
       ),
     );
