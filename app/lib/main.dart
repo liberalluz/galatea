@@ -13,6 +13,19 @@ void main() {
 
 /// Root of the Galatea app: the shell hosts the three fixed tabs; the chart
 /// page grows in from B4.
+/// The app theme (B20, `TC-QUAL-001`): the bundled IPA-capable font
+/// heads the fontFamilyFallback chain, so the phonetic symbols (ʃ θ ŋ ɚ)
+/// render from the bundled Noto Sans on Web and iOS; the system defaults
+/// stay behind it and nothing blocks the first frame (ux-flows R27 empty
+/// state).
+ThemeData buildTheme() {
+  return ThemeData(
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+    useMaterial3: true,
+    fontFamilyFallback: const ['Noto Sans'],
+  );
+}
+
 class GalateaApp extends StatelessWidget {
   const GalateaApp({
     super.key,
@@ -41,10 +54,7 @@ class GalateaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Galatea',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+      theme: buildTheme(),
       home: ShellPage(
         catalogFuture: catalogFuture,
         correspondenceFuture: correspondenceFuture,

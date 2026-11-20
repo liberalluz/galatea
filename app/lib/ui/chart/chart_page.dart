@@ -251,7 +251,7 @@ class _ChartPageState extends State<ChartPage> {
     ];
   }
 
-  Table _groupTable(
+  Widget _groupTable(
     BuildContext context,
     List<PhonemeCatalogEntry> entries,
     Map<String, String> glyphs,
@@ -281,9 +281,40 @@ class _ChartPageState extends State<ChartPage> {
       ];
       rows.add(TableRow(children: cells));
     }
-    return Table(
-      children: rows,
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+    return _narrowGuard(
+      Table(
+        children: rows,
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      ),
+    );
+  }
+
+  /// The floor width of one grid cell (`B20`, `TC-QUAL-002`): five
+  /// columns never fold and every cell keeps at least this width, so the
+  /// grid's minimum width is [kMinGridWidth].
+  static const double kMinCellWidth = 72;
+
+  /// The grid's minimum width; below it the grid scrolls horizontally.
+  static const double kMinGridWidth = kMinCellWidth * 5;
+
+  /// The narrow-screen guard (`B20`, `TC-QUAL-002`, ux-flows R28 failure
+  /// branch): on a viewport too narrow for the five columns the grid
+  /// scrolls horizontally instead of squeezing — no column folds, no
+  /// phoneme clips, the glyph size stays readable. The cell width is
+  /// floor-set rather than measured, so the first frame needs no
+  /// re-layout pass (the R28 empty state).
+  Widget _narrowGuard(Widget table) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < kMinGridWidth) {
+          return SingleChildScrollView(
+            key: const ValueKey('grid-scroll'),
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(width: kMinGridWidth, child: table),
+          );
+        }
+        return table;
+      },
     );
   }
 
