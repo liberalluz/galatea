@@ -366,7 +366,14 @@ class _ChartPageState extends State<ChartPage> {
           ),
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Text(glyph, style: Theme.of(context).textTheme.titleLarge),
+          // The symbol reads its spoken text to screen readers, falling
+          // back to the phoneme id when the spoken text is empty
+          // (TC-QUAL-004, REQ-030, ux-flows R30).
+          child: Semantics(
+            excludeSemantics: true,
+            label: entry.tts.isNotEmpty ? entry.tts : entry.id,
+            child: Text(glyph, style: Theme.of(context).textTheme.titleLarge),
+          ),
         ),
       ),
     );

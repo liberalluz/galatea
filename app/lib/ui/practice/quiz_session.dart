@@ -312,10 +312,14 @@ class _RecognitionTaskBodyState extends State<_RecognitionTaskBody> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            entry.printGlyph,
+          Semantics(
             key: ValueKey('task-stem-${entry.id}'),
-            style: Theme.of(context).textTheme.displayMedium,
+            excludeSemantics: true,
+            label: entry.tts.isNotEmpty ? entry.tts : entry.id,
+            child: Text(
+              entry.printGlyph,
+              style: Theme.of(context).textTheme.displayMedium,
+            ),
           ),
           const SizedBox(height: 24),
           for (final option in widget.options.options)

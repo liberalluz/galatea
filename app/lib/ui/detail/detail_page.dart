@@ -166,11 +166,22 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     _playController.forward(from: 0);
   }
 
+  /// The screen-reader label for the phoneme: its spoken text, falling
+  /// back to the phoneme id when the spoken text is empty (TC-QUAL-004,
+  /// REQ-030, ux-flows R30).
+  String get _spokenLabel => _entry.tts.isNotEmpty ? _entry.tts : _entry.id;
+
   @override
   Widget build(BuildContext context) {
     final entry = _entry;
     return Scaffold(
-      appBar: AppBar(title: Text(entry.printGlyph)),
+      appBar: AppBar(
+        title: Semantics(
+          excludeSemantics: true,
+          label: _spokenLabel,
+          child: Text(entry.printGlyph),
+        ),
+      ),
       body: ListView(
         key: const ValueKey('detail-page'),
         padding: const EdgeInsets.all(16),
@@ -178,9 +189,14 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
           _switcher(context),
           const SizedBox(height: 16),
           Center(
-            child: Text(
-              entry.printGlyph,
-              style: Theme.of(context).textTheme.displayLarge,
+            child: Semantics(
+              key: const ValueKey('detail-hero-glyph'),
+              excludeSemantics: true,
+              label: _spokenLabel,
+              child: Text(
+                entry.printGlyph,
+                style: Theme.of(context).textTheme.displayLarge,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -344,9 +360,13 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
             Text(label, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Center(
-              child: Text(
-                glyph,
-                style: Theme.of(context).textTheme.headlineMedium,
+              child: Semantics(
+                excludeSemantics: true,
+                label: _spokenLabel,
+                child: Text(
+                  glyph,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
               ),
             ),
             const SizedBox(height: 12),
