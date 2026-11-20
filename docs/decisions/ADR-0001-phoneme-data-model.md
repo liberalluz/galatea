@@ -2,7 +2,7 @@
 
 ## Context
 
-The product shows the same 50 phonemes in three notation systems (KK default,
+The product shows the same 48 phonemes in three notation systems (KK default,
 DJ, IPA). The product rules (PRD C3) require mastery to be counted per phoneme
 and shared across notations, and notation switching must keep the current
 phoneme selected. Modelling three parallel symbol sets would multiply the
@@ -19,7 +19,7 @@ by phoneme id only; notation is a display filter.
 
 - Notation switching is a view change with no state migration.
 - Mastery statistics can filter by notation for display while the denominator
-  stays 50.
+  stays 48.
 - Adding or correcting a notation is a data edit on the mapping, not a
   re-modelling (supports `REQ-003`, `REQ-012`, `REQ-023`).
 
