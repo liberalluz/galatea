@@ -1,6 +1,0 @@
-- Batch: B18 — the statistics view only; the mastery engine of B17 is consumed unchanged
-- Added: the Me tab statistics (`TC-REVIEW-002`, `REQ-023`, wireframe P5 right half): the 已掌握 3★ / 学习中 1–2★ / 未掌握 0★ summary rows over the catalog denominator 48, the total line, and the fixed empty notice 开始练习后显示掌握度 (ux-flows R23 empty state)
-- Added: the KK/DJ/IPA display filter chips — switching the notation changes nothing by design, the shared stars make the counts identical under every filter (ux-flows R23 step 3, TC-REVIEW-002 exit)
-- Added: the detail page star rating row (ux-flows R23 entry, second surface): the phoneme's 0–3 stars with the mastery label; a degraded mastery state shows the fixed 数据待同步 marker with 0 stars, never inventing stars (the R23 failure branch)
-- Wired: the shell owns one MasteryController and hands the same instance to the practice tab, the Me tab and the detail page (single source of truth — an answer reflects in the statistics without a reload); the preferences load with the timeout fallback moved from the practice tab to the shell
-- Docs: the SDP B18 row's denominator corrected from 50 to 48 (typo; `TC-REVIEW-002`, wireframe P5 and the catalog all say 48)

@@ -54,3 +54,8 @@ __pycache__/
 
 # Batch execution state
 .batch/
+
+# Nebula installation artifacts
+# Nebula stack: flutter
+**/.dart_tool/**
+**/build/**

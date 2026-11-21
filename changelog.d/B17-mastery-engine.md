@@ -1,6 +1,0 @@
-- Batch: B17 — mastery engine only; the Me-tab statistics view stays with B18
-- Added: the mastery engine (`TC-REVIEW-001`, `REQ-022`): the star ladder (start 0, +1 per correct answer capped at 3, −1 per wrong answer floored at 0) and the review queue (a wrong answer queues at interval 1, consecutive correct review answers advance the 1/2/4/7/15-day intervals, a wrong review answer resets to interval 1); the clock is injectable
-- Added: the mastery store contract with the preferences-backed production store (`shared_preferences`, covering Web/mobile/desktop) and the in-memory test store; the state persists as one JSON document keyed by phoneme id, and stars carry no per-notation dimension (ADR-0001)
-- Added: the review mode in the practice tab (wireframe P5): the 新练/复习 mode switch, the queue listing with 今天/N天后 due labels, the 今日到期 count, the start control over the due-today subset in ascending due order, and the fixed empty state 暂无待复习音位
-- Added: the R22 failure branch — a store write failure keeps the in-memory star change and shows the fixed notice 复习队列暂未更新
-- Wired: the session reports every verdict to the engine regardless of practice mode (the R22 entry is mode-blind)
