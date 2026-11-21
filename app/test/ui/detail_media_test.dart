@@ -82,7 +82,7 @@ void main() {
     (tester) async {
       await pumpDetail(tester, initialId: 'a');
 
-      await tester.tap(find.byKey(const ValueKey('switcher-chip-c')));
+      await tester.tap(find.byKey(const ValueKey('switcher-circle-c')));
       await tester.pump();
 
       expect(find.byKey(const ValueKey('mouth-pending')), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
   ) async {
     await pumpDetail(tester, initialId: 'a');
 
-    await tester.tap(find.byKey(const ValueKey('switcher-chip-b')));
+    await tester.tap(find.byKey(const ValueKey('switcher-circle-b')));
     await tester.pump();
 
     expect(find.text('a1'), findsNothing);

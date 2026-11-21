@@ -4,13 +4,15 @@ import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/ui/detail/detail_page.dart';
 
 void main() {
-  /// Five fake entries so prev/next adjacency and both edges are reachable
-  /// without loading the bundled asset inside the fake-async test zone.
+  /// Nine fake vowel entries: the shared row model splits them 5 + 4, so
+  /// the last row's actual count and the no-cross-row rule are both
+  /// reachable without loading the bundled asset inside the fake-async
+  /// test zone.
   PhonemeCatalog fakeCatalog() => PhonemeCatalog(
     version: 'test-v1',
     sourceLabel: 'test source',
     entries: [
-      for (final glyph in ['a', 'b', 'c', 'd', 'e'])
+      for (final glyph in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
         PhonemeCatalogEntry(
           id: glyph,
           kind: PhonemeKind.vowel,
@@ -38,40 +40,86 @@ void main() {
   }
 
   testWidgets(
-    'the detail page shows the phoneme switcher strip with the current chip highlighted',
+    'the circle switcher shows the tapped phoneme\'s row members and defaults to the tapped phoneme',
     (tester) async {
       await pumpDetail(tester, initialId: 'c');
 
-      expect(find.byKey(const ValueKey('switcher-prev')), findsOneWidget);
-      expect(find.byKey(const ValueKey('switcher-next')), findsOneWidget);
       for (final glyph in ['a', 'b', 'c', 'd', 'e']) {
         expect(
-          find.byKey(ValueKey('switcher-chip-$glyph')),
+          find.byKey(ValueKey('switcher-circle-$glyph')),
           findsOneWidget,
-          reason: 'chip $glyph must be in the strip',
+          reason: 'circle $glyph must be in the row switcher',
         );
       }
       expect(
-        find.byKey(const ValueKey('switcher-chip-c-selected')),
-        findsOneWidget,
-        reason: 'the current phoneme chip is highlighted',
+        find.byKey(const ValueKey('switcher-circle-f')),
+        findsNothing,
+        reason: 'circles never cross into another row',
       );
       expect(
-        find.byKey(const ValueKey('switcher-chip-b-selected')),
+        find.byKey(const ValueKey('switcher-circle-c-selected')),
+        findsOneWidget,
+        reason: 'the switcher defaults to the tapped phoneme, not the row head',
+      );
+      expect(
+        find.byKey(const ValueKey('switcher-circle-a-selected')),
         findsNothing,
       );
     },
   );
 
+  testWidgets('the last row shows its actual count of circles (4, not 5)', (
+    tester,
+  ) async {
+    await pumpDetail(tester, initialId: 'g');
+
+    for (final glyph in ['f', 'g', 'h', 'i']) {
+      expect(find.byKey(ValueKey('switcher-circle-$glyph')), findsOneWidget);
+    }
+    expect(
+      find.byKey(const ValueKey('switcher-circle-e')),
+      findsNothing,
+      reason: 'the last row carries four members, not a padded fifth',
+    );
+    expect(
+      find.byKey(const ValueKey('switcher-circle-g-selected')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
-    'the detail page hosts the zone skeleton in the fixed section order',
+    'tapping a circle moves the selection within the row and the ends do not wrap',
+    (tester) async {
+      await pumpDetail(tester, initialId: 'a');
+
+      await tester.tap(find.byKey(const ValueKey('switcher-circle-e')));
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('switcher-circle-e-selected')),
+        findsOneWidget,
+        reason: 'tapping a member circle selects that member',
+      );
+      expect(
+        find.byKey(const ValueKey('switcher-circle-f')),
+        findsNothing,
+        reason: 'the row end does not wrap into the next row',
+      );
+      for (final glyph in ['a', 'b', 'c', 'd']) {
+        expect(find.byKey(ValueKey('switcher-circle-$glyph')), findsOneWidget);
+      }
+    },
+  );
+
+  testWidgets(
+    'the zones follow the wireframe order: mouth beside writing, then pronunciation, then example cards',
     (tester) async {
       await pumpDetail(tester, initialId: 'c');
 
       final zoneKeys = [
-        'zone-audio',
         'zone-mouth',
         'zone-writing',
+        'zone-audio',
         'zone-words',
       ];
       final foundKeys = find
@@ -83,83 +131,34 @@ void main() {
           .toList();
 
       expect(foundKeys, zoneKeys, reason: 'zones appear in the fixed order');
-    },
-  );
-
-  testWidgets(
-    'tapping next moves to the adjacent phoneme and refreshes every section',
-    (tester) async {
-      await pumpDetail(tester, initialId: 'b');
-
-      await tester.tap(find.byKey(const ValueKey('switcher-next')));
-      await tester.pump();
-
       expect(
-        find.byKey(const ValueKey('switcher-chip-c-selected')),
-        findsOneWidget,
-        reason: 'next moves to the adjacent phoneme in catalog order',
-      );
-      expect(
-        find.byKey(const ValueKey('switcher-chip-b-selected')),
+        find.byKey(const ValueKey('switcher-prev')),
         findsNothing,
+        reason: 'the catalog-order arrows are gone',
       );
-
-      // Every zone shows the new phoneme's glyph: all sections refreshed.
-      for (final zone in [
-        'zone-audio',
-        'zone-mouth',
-        'zone-writing',
-        'zone-words',
-      ]) {
-        expect(
-          find.descendant(
-            of: find.byKey(ValueKey(zone)),
-            matching: find.text('c'),
-          ),
-          findsOneWidget,
-          reason: '$zone refreshed to the new phoneme',
-        );
-      }
+      expect(find.byKey(const ValueKey('switcher-next')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('detail-hero-glyph')),
+        findsOneWidget,
+        reason: 'the large glyph stays above the zones',
+      );
     },
   );
 
-  testWidgets('prev is disabled at the first phoneme and does not wrap', (
+  testWidgets('the zone cards no longer duplicate the large glyph display', (
     tester,
   ) async {
-    await pumpDetail(tester, initialId: 'a');
+    await pumpDetail(tester, initialId: 'c');
 
-    final prev = tester.widget<IconButton>(
-      find.byKey(const ValueKey('switcher-prev')),
-    );
-    expect(prev.onPressed, isNull, reason: 'prev is disabled at the first');
-
-    await tester.tap(find.byKey(const ValueKey('switcher-prev')));
-    await tester.pump();
-
-    expect(
-      find.byKey(const ValueKey('switcher-chip-a-selected')),
-      findsOneWidget,
-      reason: 'tapping disabled prev does not wrap around',
-    );
-  });
-
-  testWidgets('next is disabled at the last phoneme and does not wrap', (
-    tester,
-  ) async {
-    await pumpDetail(tester, initialId: 'e');
-
-    final next = tester.widget<IconButton>(
-      find.byKey(const ValueKey('switcher-next')),
-    );
-    expect(next.onPressed, isNull, reason: 'next is disabled at the last');
-
-    await tester.tap(find.byKey(const ValueKey('switcher-next')));
-    await tester.pump();
-
-    expect(
-      find.byKey(const ValueKey('switcher-chip-e-selected')),
-      findsOneWidget,
-      reason: 'tapping disabled next does not wrap around',
-    );
+    for (final zone in ['zone-mouth', 'zone-writing', 'zone-audio']) {
+      expect(
+        find.descendant(
+          of: find.byKey(ValueKey(zone)),
+          matching: find.text('c'),
+        ),
+        findsNothing,
+        reason: '$zone drops the duplicated glyph',
+      );
+    }
   });
 }

@@ -174,10 +174,10 @@ void main() {
       );
     }
 
-    await tester.tap(find.byKey(const ValueKey('switcher-next')));
+    await tester.tap(find.byKey(const ValueKey('switcher-circle-d')));
     await tester.pump();
     expect(
-      find.byKey(const ValueKey('switcher-chip-d-selected')),
+      find.byKey(const ValueKey('switcher-circle-d-selected')),
       findsOneWidget,
       reason: 'switcher navigation still works while audio failed',
     );
@@ -192,7 +192,7 @@ void main() {
     audio.state.value = AudioPlaybackState.playing;
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey('switcher-next')));
+    await tester.tap(find.byKey(const ValueKey('switcher-circle-d')));
     await tester.pump();
 
     expect(

@@ -5,25 +5,30 @@ import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../domain/mastery_controller.dart';
+import '../chart/row_model.dart';
 import '../writing/tracing_canvas.dart';
 
-/// Detail page: the zone skeleton (audio -> mouth -> writing -> words) in the
-/// fixed section order (`wireframe P3`, `SDD` layout) with the horizontal
-/// phoneme switcher at the top. The switcher is a strip of phoneme chips with
-/// the current chip highlighted plus prev/next arrows (`REQ-011`); prev/next
-/// move to the adjacent phoneme in catalog order and refresh every section;
-/// at the ends the respective arrow is disabled and does not wrap
-/// (`TC-DETAIL-004`). The pronunciation button in the audio zone exposes the
-/// four fixed states loading / ready / playing / failed (`TC-DETAIL-001`);
-/// failures never disable the other sections. The mouth zone shows a
-/// mouth-shape slot (`REQ-007`) and the words zone a 2×2 grid of example
-/// cards (`REQ-010`); missing assets render fixed same-size placeholders and
-/// cards are never hidden (`TC-DETAIL-002`, `TC-CONTENT-003`). The writing
-/// zone hosts the tracing area over the handwritten glyph and the
-/// stroke-order control (`REQ-008`, `REQ-009`, `ADR-0003`); strokes drawn by
-/// the pointer are kept when input is interrupted, and phonemes without
-/// stroke data show the fixed preparing state with the control disabled,
-/// independent of the tracing area (`TC-TRACE-001`, `TC-TRACE-002`).
+/// Detail page per the fixed wireframe P3 zone order (`SDD §3.3`,
+/// decisions 11/13): same-row circle switcher, large glyph with the
+/// reduced star row, mouth-shape slot beside the single writing grid,
+/// pronunciation button, 2×2 example cards (`REQ-006`–`REQ-011`).
+///
+/// The switcher renders the current phoneme's row members from the shared
+/// row model (`REQ-011`): five circles, the last row at its actual count,
+/// defaulting to the tapped phoneme; adjacent means same-row member, so
+/// navigation never crosses rows and the ends of a row do not wrap
+/// (`TC-DETAIL-004`). The stroke order auto-plays once when a phoneme
+/// appears and tapping the writing grid replays it with pronunciation;
+/// missing stroke data keeps the fixed `stroke-pending` state with
+/// playback disabled, independent of tracing (`REQ-009`, `TC-TRACE-002`).
+/// The top-right pen control opens the handwriting overlay covering the
+/// page — grey model, cross guides, clear-and-rewrite, done returns; it is
+/// an overlay, not a route, and never produces a score or verdict
+/// (`REQ-035`, `TC-TRACE-003`). The pronunciation button exposes the four
+/// fixed states loading / ready / playing / failed (`TC-DETAIL-001`);
+/// failures never disable the other sections. Missing media assets render
+/// fixed same-size placeholders and cards are never hidden
+/// (`TC-DETAIL-002`, `TC-CONTENT-003`).
 
 class DetailPage extends StatefulWidget {
   const DetailPage({
@@ -36,7 +41,8 @@ class DetailPage extends StatefulWidget {
     this.mastery,
   });
 
-  /// The full catalog, so prev/next can walk the catalog order.
+  /// The full catalog; the row model splits it into the same rows the
+  /// chart and the row-select mode show.
   final PhonemeCatalog catalog;
 
   /// The phoneme opened from the chart grid.
@@ -54,9 +60,9 @@ class DetailPage extends StatefulWidget {
   /// absent or missing an entry the writing zone shows the preparing state.
   final GlyphData? glyphs;
 
-  /// The shell-owned mastery controller (`B18`); when present the star
-  /// rating row shows under the phoneme id (ux-flows R23 entry, second
-  /// surface). `null` keeps the row absent.
+  /// The shell-owned mastery controller (`B18`); when present the reduced
+  /// star rating row shows under the phoneme id (ux-flows R23 entry,
+  /// second surface). `null` keeps the row absent.
   final MasteryController? mastery;
 
   @override
@@ -74,12 +80,20 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   final GlobalKey<TracingCanvasState> _canvasKey =
       GlobalKey<TracingCanvasState>();
 
+  /// The overlay's own canvas state; overlay strokes are independent of
+  /// the writing zone (`REQ-035`).
+  final GlobalKey<TracingCanvasState> _overlayCanvasKey =
+      GlobalKey<TracingCanvasState>();
+
   /// Whether the canvas currently holds user strokes; drives the trace
   /// hint and the clear control.
   bool _hasStrokes = false;
 
   /// Whether the stroke-order animation is playing (`REQ-009`).
   bool _playing = false;
+
+  /// Whether the handwriting overlay covers the page (`REQ-035`).
+  bool _overlayOpen = false;
 
   late final AnimationController _playController = AnimationController(
     vsync: this,
@@ -94,6 +108,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _audio.state.addListener(_onAudioStateChanged);
+    _scheduleAutoplay();
   }
 
   @override
@@ -123,15 +138,17 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     _audio.play(_entry.id, _entry.tts.isEmpty ? _entry.id : _entry.tts);
   }
 
-  void _go(int delta) {
-    final next = _index + delta;
-    if (next < 0 || next >= widget.catalog.entries.length) {
-      return;
-    }
-    _audio.stop();
-    setState(() {
-      _index = next;
-      _resetWriting();
+  /// The stroke order auto-plays once when a phoneme appears
+  /// (`TC-TRACE-002`, decision 13): page entry and every switch.
+  void _scheduleAutoplay() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final glyph = _glyph;
+      if (glyph != null && glyph.strokes.isNotEmpty && !_playing) {
+        _playStrokes();
+      }
     });
   }
 
@@ -141,6 +158,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
       _index = widget.catalog.entries.indexWhere((entry) => entry.id == id);
       _resetWriting();
     });
+    _scheduleAutoplay();
   }
 
   /// A phoneme switch resets the writing zone: user strokes and the
@@ -166,6 +184,31 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     _playController.forward(from: 0);
   }
 
+  /// Tapping the writing grid replays the stroke order with pronunciation
+  /// (`TC-TRACE-002`, decision 13); without stroke data it does nothing —
+  /// playback stays disabled (`TC-TRACE-002`).
+  void _replayFromGrid() {
+    final glyph = _glyph;
+    if (glyph == null || glyph.strokes.isEmpty || _playing) {
+      return;
+    }
+    _playStrokes();
+    _play();
+  }
+
+  /// The current phoneme's row members from the shared row model
+  /// (`REQ-011`): the coarse group picks the row list, the current id
+  /// picks the member row.
+  List<PhonemeCatalogEntry> get _rowMembers {
+    final rows = rowsForKind(_entry.kind, widget.catalog.entries);
+    for (final row in rows) {
+      if (row.any((entry) => entry.id == _entry.id)) {
+        return row;
+      }
+    }
+    return [_entry];
+  }
+
   /// The screen-reader label for the phoneme: its spoken text, falling
   /// back to the phoneme id when the spoken text is empty (TC-QUAL-004,
   /// REQ-030, ux-flows R30).
@@ -181,99 +224,110 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
           label: _spokenLabel,
           child: Text(entry.printGlyph),
         ),
+        actions: [
+          IconButton(
+            key: const ValueKey('detail-pen'),
+            tooltip: '手写练习',
+            onPressed: () => setState(() => _overlayOpen = true),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
       ),
-      body: ListView(
-        key: const ValueKey('detail-page'),
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          _switcher(context),
-          const SizedBox(height: 16),
-          Center(
-            child: Semantics(
-              key: const ValueKey('detail-hero-glyph'),
-              excludeSemantics: true,
-              label: _spokenLabel,
-              child: Text(
-                entry.printGlyph,
-                style: Theme.of(context).textTheme.displayLarge,
+          ListView(
+            key: const ValueKey('detail-page'),
+            padding: const EdgeInsets.all(16),
+            children: [
+              _switcher(context),
+              const SizedBox(height: 16),
+              Center(
+                child: Semantics(
+                  key: const ValueKey('detail-hero-glyph'),
+                  excludeSemantics: true,
+                  label: _spokenLabel,
+                  child: Text(
+                    entry.printGlyph,
+                    style: Theme.of(context).textTheme.displayLarge,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  entry.id,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              if (widget.mastery != null) ...[
+                const SizedBox(height: 8),
+                _starRow(context, widget.mastery!),
+              ],
+              const SizedBox(height: 16),
+              // Wireframe P3: the mouth-shape slot beside the single
+              // writing grid (`SDD §3.3`).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _zone(
+                        context,
+                        key: 'zone-mouth',
+                        label: '口型区',
+                        child: _mouthSlot(context, _examples),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _zone(
+                        context,
+                        key: 'zone-writing',
+                        label: '书写区',
+                        child: _writingZone(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _zone(
+                context,
+                key: 'zone-audio',
+                label: '发音区',
+                child: _audioControl(context),
+              ),
+              _zone(
+                context,
+                key: 'zone-words',
+                label: '例词例句',
+                child: _exampleGrid(context, _examples),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(entry.id, style: Theme.of(context).textTheme.bodyLarge),
-          ),
-          if (widget.mastery != null) ...[
-            const SizedBox(height: 8),
-            _starRow(context, widget.mastery!),
-          ],
-          const SizedBox(height: 16),
-          _zone(
-            context,
-            key: 'zone-audio',
-            label: '发音区',
-            glyph: entry.printGlyph,
-            child: _audioControl(context),
-          ),
-          _zone(
-            context,
-            key: 'zone-mouth',
-            label: '口型区',
-            glyph: entry.printGlyph,
-            child: _mouthSlot(context, _examples),
-          ),
-          _zone(
-            context,
-            key: 'zone-writing',
-            label: '书写区',
-            glyph: entry.printGlyph,
-            child: _writingZone(context),
-          ),
-          _zone(
-            context,
-            key: 'zone-words',
-            label: '例词例句',
-            glyph: entry.printGlyph,
-            child: _exampleGrid(context, _examples),
-          ),
+          if (_overlayOpen) _handwritingOverlay(context),
         ],
       ),
     );
   }
 
+  /// The same-row circle switcher (`REQ-011`, `TC-DETAIL-004`): one circle
+  /// per row member from the shared row model, the current member
+  /// selected; no arrows, no crossing rows, no wrap.
   Widget _switcher(BuildContext context) {
-    final entries = widget.catalog.entries;
-    return Row(
+    final members = _rowMembers;
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.center,
       children: [
-        IconButton(
-          key: const ValueKey('switcher-prev'),
-          onPressed: _index > 0 ? () => _go(-1) : null,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (var i = 0; i < entries.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: _chip(context, entries[i], selected: i == _index),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        IconButton(
-          key: const ValueKey('switcher-next'),
-          onPressed: _index < entries.length - 1 ? () => _go(1) : null,
-          icon: const Icon(Icons.chevron_right),
-        ),
+        for (final member in members)
+          _circle(context, member, selected: member.id == _entry.id),
       ],
     );
   }
 
-  Widget _chip(
+  Widget _circle(
     BuildContext context,
     PhonemeCatalogEntry entry, {
     required bool selected,
@@ -281,17 +335,21 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     final outline = Theme.of(context).colorScheme.outline;
     final primary = Theme.of(context).colorScheme.primary;
     return InkWell(
-      key: ValueKey('switcher-chip-${entry.id}'),
+      key: ValueKey('switcher-circle-${entry.id}'),
       onTap: () => _select(entry.id),
-      borderRadius: BorderRadius.circular(8),
+      customBorder: const CircleBorder(),
       child: Container(
-        key: selected ? ValueKey('switcher-chip-${entry.id}-selected') : null,
+        key: selected ? ValueKey('switcher-circle-${entry.id}-selected') : null,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
-          border: Border.all(color: selected ? primary : outline),
-          borderRadius: BorderRadius.circular(8),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? primary : outline,
+            width: selected ? 2 : 1,
+          ),
         ),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Text(
           entry.printGlyph,
           style: Theme.of(context).textTheme.titleMedium,
@@ -300,10 +358,8 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     );
   }
 
-  /// One zone of the fixed section order; zones with real content (audio,
-  /// mouth, words) render their child, the rest keep the skeleton box.
-  /// The star rating row (`B18`, ux-flows R23 entry surface 2): the
-  /// phoneme's shared 0–3 stars with the mastery label; a degraded
+  /// The reduced star rating row (`B18`, ux-flows R23 entry surface 2):
+  /// the phoneme's shared 0–3 stars with the mastery label; a degraded
   /// controller shows 0 stars plus the fixed 数据待同步 marker instead of
   /// presenting values that may not reflect persisted data (the R23
   /// failure branch — never inventing stars).
@@ -326,7 +382,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 for (var i = 0; i < 3; i++)
-                  Icon(i < star ? Icons.star : Icons.star_border, size: 20),
+                  Icon(i < star ? Icons.star : Icons.star_border, size: 16),
                 const SizedBox(width: 8),
                 Text(label, style: Theme.of(context).textTheme.bodyMedium),
               ],
@@ -343,12 +399,14 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     );
   }
 
+  /// One zone of the fixed section order; each zone card carries its
+  /// label and real content only — the duplicated glyph display of the
+  /// old skeleton is gone with the wireframe layout (`SDD §3.3`).
   Widget _zone(
     BuildContext context, {
     required String key,
     required String label,
-    required String glyph,
-    Widget? child,
+    required Widget child,
   }) {
     return Card(
       key: ValueKey<String>(key),
@@ -356,34 +414,11 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(label, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            Center(
-              child: Semantics(
-                excludeSemantics: true,
-                label: _spokenLabel,
-                child: Text(
-                  glyph,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (child != null)
-              child
-            else
-              Container(
-                height: 56,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            const SizedBox(height: 12),
+            child,
           ],
         ),
       ),
@@ -391,44 +426,48 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   }
 
   /// The writing zone (`REQ-008`, `REQ-009`): the tracing area over the
-  /// handwritten glyph plus the stroke-order control. The control's
-  /// preparing state is independent of the tracing area (`TC-TRACE-002`).
-  /// The area is the shared tracing canvas (`B15`): capture and rendering
-  /// have one source; the zone adds the hint overlay and the playback.
+  /// handwritten glyph; tapping the grid replays the stroke order with
+  /// pronunciation (`TC-TRACE-002`). The area is the shared tracing
+  /// canvas (`B15`): capture and rendering have one source; the zone adds
+  /// the hint overlay and the playback.
   Widget _writingZone(BuildContext context) {
     final outline = Theme.of(context).colorScheme.outline;
     final glyph = _glyph;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          children: [
-            AnimatedBuilder(
-              animation: _playController,
-              builder: (context, _) => TracingCanvas(
-                key: _canvasKey,
-                areaKey: const ValueKey('tracing-area'),
-                model: glyph?.strokes ?? const <List<Offset>>[],
-                playedStroke: _playing ? _playedStroke() : -1,
-                playFraction: _playing ? _playController.value : 0,
-                onChanged: (strokes) =>
-                    setState(() => _hasStrokes = strokes.isNotEmpty),
+        GestureDetector(
+          onTap: _replayFromGrid,
+          child: Stack(
+            children: [
+              AnimatedBuilder(
+                animation: _playController,
+                builder: (context, _) => TracingCanvas(
+                  key: _canvasKey,
+                  areaKey: const ValueKey('tracing-area'),
+                  model: glyph?.strokes ?? const <List<Offset>>[],
+                  playedStroke: _playing ? _playedStroke() : -1,
+                  playFraction: _playing ? _playController.value : 0,
+                  onChanged: (strokes) =>
+                      setState(() => _hasStrokes = strokes.isNotEmpty),
+                ),
               ),
-            ),
-            if (!_hasStrokes)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Center(
-                    child: Text(
-                      '在此描摹',
-                      key: const ValueKey('trace-hint'),
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: outline),
+              if (!_hasStrokes)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Center(
+                      child: Text(
+                        '在此描摹',
+                        key: const ValueKey('trace-hint'),
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(color: outline),
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -449,27 +488,18 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     );
   }
 
-  /// The stroke-order control (`REQ-009`): ready / playing; phonemes
-  /// without stroke data show the fixed preparing label with the control
-  /// disabled, independent of the tracing area (`TC-TRACE-002`).
+  /// The stroke-order playback state (`REQ-009`): playing indicator while
+  /// the animation runs; phonemes without stroke data show the fixed
+  /// preparing label — playback disabled, independent of the tracing area
+  /// (`TC-TRACE-002`). Replay is the grid tap, not a separate control.
   Widget _strokeControl(BuildContext context) {
     final outline = Theme.of(context).colorScheme.outline;
     final glyph = _glyph;
     if (glyph == null || glyph.strokes.isEmpty) {
-      return Row(
-        children: [
-          IconButton(
-            onPressed: null,
-            icon: const Icon(Icons.play_arrow),
-            color: outline,
-          ),
-          Text(
-            '笔顺准备中',
-            key: const ValueKey('stroke-pending'),
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: outline),
-          ),
-        ],
+      return Text(
+        '笔顺准备中',
+        key: const ValueKey('stroke-pending'),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: outline),
       );
     }
     if (_playing) {
@@ -480,11 +510,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
         child: CircularProgressIndicator(strokeWidth: 3),
       );
     }
-    return IconButton(
-      key: const ValueKey('stroke-play'),
-      onPressed: _playStrokes,
-      icon: const Icon(Icons.play_arrow),
-    );
+    return const SizedBox.shrink();
   }
 
   /// The index of the stroke the playback animation is currently drawing,
@@ -509,7 +535,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height: 140,
+        height: 160,
         width: double.infinity,
         child: hasImage
             ? Image.asset(
@@ -654,4 +680,112 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     };
     return Center(child: child);
   }
+
+  /// The handwriting overlay (`REQ-035`, decision 12): a page-level Stack
+  /// overlay, not a Navigator route — the grey handwritten model with the
+  /// cross guides behind the pointer strokes, clear-and-rewrite, done
+  /// returns to the detail page. It never produces a score or verdict;
+  /// scoring stays with the writing task (`REQ-018`).
+  Widget _handwritingOverlay(BuildContext context) {
+    final outline = Theme.of(context).colorScheme.outline;
+    final glyph = _glyph;
+    return Positioned.fill(
+      key: const ValueKey('handwriting-overlay'),
+      child: Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Text('手写练习', style: Theme.of(context).textTheme.titleLarge),
+                    const Spacer(),
+                    Semantics(
+                      excludeSemantics: true,
+                      label: _spokenLabel,
+                      child: Text(
+                        _entry.printGlyph,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          key: const ValueKey('overlay-guides'),
+                          painter: _CrossGuidePainter(color: outline),
+                        ),
+                      ),
+                      TracingCanvas(
+                        key: _overlayCanvasKey,
+                        areaKey: const ValueKey('overlay-canvas'),
+                        model: glyph?.strokes ?? const <List<Offset>>[],
+                        height: double.infinity,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    TextButton.icon(
+                      key: const ValueKey('overlay-clear'),
+                      onPressed: () => _overlayCanvasKey.currentState?.clear(),
+                      icon: const Icon(Icons.restart_alt),
+                      label: const Text('清除重写'),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      key: const ValueKey('overlay-done'),
+                      onPressed: () => setState(() => _overlayOpen = false),
+                      child: const Text('完成'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The cross guides of the handwriting overlay (`REQ-035`, decision 12):
+/// a faint vertical and horizontal centre line behind the grey model.
+class _CrossGuidePainter extends CustomPainter {
+  _CrossGuidePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(size.width / 2, 0),
+      Offset(size.width / 2, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CrossGuidePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
