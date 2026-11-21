@@ -12,7 +12,7 @@ import 'ui/shell/shell_page.dart';
 
 /// The app version shown on the About page (REQ-001); the release flow
 /// updates it together with the pubspec version.
-const String kAppVersion = '0.2.0-dev';
+const String kAppVersion = '0.2.0';
 
 void main() {
   runApp(const GalateaApp());
