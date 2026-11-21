@@ -40,12 +40,12 @@ acceptance criterion; it does not restate the PRD.
 | `REQ-012` | KK/DJ/IPA correspondence data with the single ISBN source | The data is labelled with the book title and ISBN (About page) and can be updated independently of app code | R12 |
 | `REQ-013` | Print and handwritten glyphs per phoneme, handwritten with stroke data | The chart and question stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data | R13 |
 | `REQ-014` | Example cards carry images | Every example card shows an image | R14 |
-| `REQ-015` | Practice entry: chart floating button + in-page row-select mode | The chart's right-bottom floating button enters a row-select state (default first row selected, row-level multi-select); confirm starts the quiz on the selected rows; no standalone range screen exists | R15 |
+| `REQ-015` | Practice entry: chart floating button + in-page row-select mode | The chart's right-bottom floating button enters a row-select state (default first row selected; tapping another row moves the single-row selection — one row at a time); confirm starts the quiz on the selected row; no standalone range screen exists | R15 |
 | `REQ-016` | Recognition task: print stem, 4 spelling options | Exactly 4 options are shown and exactly 1 is correct | R16 |
 | `REQ-017` | Listening task: audio stem, 2 symbol options | 2 options are shown; the selected option highlights before confirm | R17 |
 | `REQ-018` | Writing task: handwritten model + tracing area + ✓/× verdict | A verdict is produced for the traced input | R18 |
 | `REQ-019` | Matching task: pronunciations to symbols in another notation | Pairs connect one by one; a matched pair greys out | R19 |
-| `REQ-020` | Progress bar across the session, batch label top-right | The progress bar advances with each item and the top-right batch label (vowel / consonant) matches the selected rows | R20 |
+| `REQ-020` | Progress bar across the session, batch label top-right | The progress bar advances with each item and the top-right batch label (vowel / consonant) matches the selected row's coarse group | R20 |
 | `REQ-021` | Immediate feedback; completion rate over the selected rows | Feedback appears at once; completion rate = selected-row phonemes answered ≥ 1 time ÷ selected-row phonemes (PRD product rules) | R21 |
 | `REQ-022` | Wrong answers enter spaced-repetition review, entered from the Me tab | A wrong answer lowers the star by 1 and puts the phoneme into the review queue (intervals follow PRD product rules, 1/2/4/7/15 days); the review entry lives in the Me tab under the mastery card and the review status strip deep-links there | R22 |
 | `REQ-023` | 0–3 star mastery per phoneme, per-notation statistics | Every phoneme shows a star rating shared across all three notations; statistics are viewable per notation | R23 |
@@ -59,7 +59,7 @@ acceptance criterion; it does not restate the PRD.
 | `REQ-031` | Two-tab bottom navigation: chart / Me | The bottom bar shows exactly the chart tab and the Me tab; detail, quiz, review, settings and about are drill-downs and never occupy a tab | PD spec 2026-11-21, decision 2 |
 | `REQ-032` | The Me tab hosts four pages: home, review, settings, about | The Me tab home shows the mastery card and the review status strip; review, settings and about open from it as drill-downs | PD spec 2026-11-21, decision 8 + skeleton S2–S4 |
 | `REQ-033` | One-time first-run hint | On first launch a light non-blocking hint explains the two non-obvious interactions; dismissing it is permanent, later launches show no hint | PD spec 2026-11-21, skeleton S1 |
-| `REQ-034` | Shared quiz page for new and review sessions | A new-practice session (selected rows) and a review session (due queue) render the same quiz page; only the item source differs | PD spec 2026-11-21, decision 9 |
+| `REQ-034` | Shared quiz page for new and review sessions | A new-practice session (the selected row) and a review session (due queue) render the same quiz page; only the item source differs | PD spec 2026-11-21, decision 9 |
 | `REQ-035` | Non-scored handwriting overlay on the detail page | The detail page's ✎ control opens a handwriting overlay (covering the detail page, not a route) for free tracing with clear/rewrite; it never produces a score or verdict — scoring stays with the writing task (`REQ-018`) | PD spec 2026-11-21, decision 12 |
 
 ## Product rules (countable criteria)
@@ -68,7 +68,7 @@ The star, review and completion rules fixed in PRD §5 (B3) are the acceptance
 basis of `REQ-021`–`REQ-023`: stars start at 0, +1 per correct answer up to 3,
 −1 per wrong answer down to 0; review intervals advance 1/2/4/7/15 days on
 consecutive correct answers and reset on a wrong one; completion = every
-phoneme in the selected rows answered ≥ 1 time; mastery = 3 stars. Stars are
+phoneme in the selected row answered ≥ 1 time; mastery = 3 stars. Stars are
 shared across the three notations.
 
 ## Dependencies and contingencies

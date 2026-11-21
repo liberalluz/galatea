@@ -72,8 +72,9 @@ reads UI state and the content layer never imports domain types.
 - Practice entry (`REQ-015`, decision 3, P1): a right-bottom floating button
   (idle state dark) enters an in-page row-select state — the top bar becomes
   the fixed `请选择` bar with the selected-row count and a cancel control; the
-  first row is selected by default (whole row highlighted) and other rows
-  toggle at row level; confirm starts the quiz on the selected rows. The
+  first row is selected by default (whole row highlighted) and tapping another
+  row moves the single-row selection — one row at a time; confirm starts the
+  quiz on the selected row. The
   floating button and the row-select state ignore the direct-read toggle.
   No standalone range screen exists.
 
@@ -113,13 +114,13 @@ grid → pronunciation button → 2×2 example cards (`REQ-006`–`REQ-011`).
 ### §3.4 Practice
 
 - Entry and range (`REQ-015`, `REQ-034`): the quiz opens from the chart's
-  row-select confirm (new practice over the selected rows) or from the review
+  row-select confirm (new practice over the selected row) or from the review
   entry (due queue) — both render the same shared quiz page and only the item
   source differs; per-source selection is a domain-layer concern, not a page
   variant.
 - Progress bar and batch label are persistent at the top (`REQ-020`,
   decision 4): the top-right label shows vowel / consonant matching the
-  selected rows' coarse group; a review session shows its own source's label.
+  selected row's coarse group; a review session shows its own source's label.
 - Task types with fixed shapes: recognition (print stem, 4 options, 1 correct),
   listening (audio stem, 2 options, highlight then confirm, skippable on audio
   failure), writing (handwritten model, tracing area, ✓/× verdict, empty

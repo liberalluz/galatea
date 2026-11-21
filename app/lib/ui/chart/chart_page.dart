@@ -8,6 +8,7 @@ import '../../content/phoneme_catalog.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
+import '../practice/quiz_page.dart';
 import 'row_model.dart';
 
 /// Chart page: 5-column print-glyph grid under the two coarse group
@@ -26,24 +27,16 @@ import 'row_model.dart';
 /// page follows in B29), and a failed playback shows the short failure
 /// notice without ever navigating. The chart carries no source footer:
 /// the attribution lives only on the About page (`REQ-001`, decision 7).
-
-/// Chinese titles for the phonetic category groups, keyed by the catalog's
-/// `group` field. No longer rendered by the chart (only the two coarse
-/// headers show, `REQ-002`); kept as the practice range-selection label
-/// source (`REQ-015` legacy screen) until B27 replaces that flow.
-const Map<String, String> kGroupTitles = {
-  'front': '元音·前',
-  'central': '元音·中',
-  'back': '元音·后',
-  'bilabial': '辅音·双唇',
-  'labiodental': '辅音·唇齿',
-  'dental': '辅音·齿',
-  'alveolar': '辅音·齿龈',
-  'postalveolar': '辅音·齿龈后',
-  'palatal': '辅音·硬腭',
-  'velar': '辅音·软腭',
-  'glottal': '辅音·声门',
-};
+///
+/// Practice entry (`REQ-015`, decision 3, P1): the right-bottom floating
+/// button enters the in-page row-select state — the top bar becomes the
+/// fixed 请选择 bar with the selected-row count and a cancel control, the
+/// first row is selected by default (whole row highlighted) and tapping
+/// another row moves the single-row selection — exactly one row at a
+/// time; the floating button turns into the confirm control that starts
+/// the shared quiz page over the selected row's phonemes. The button and
+/// the select state ignore the direct-read toggle. No standalone range
+/// screen exists.
 
 const Map<Notation, String> _kNotationLabels = {
   Notation.kk: 'KK',
@@ -111,6 +104,16 @@ class _ChartPageState extends State<ChartPage> {
   String? _selectedId;
   PhonemeCatalogEntry? _lastPlayed;
 
+  /// Whether the row-select state (`REQ-015`) is active: the top bar
+  /// shows the 请选择 bar, rows select at row level and the floating
+  /// button is the confirm control.
+  bool _selecting = false;
+
+  /// The selected row's index across the concatenated coarse-group rows
+  /// (vowel rows first, then consonant rows); 0 = the first vowel row,
+  /// the default. Exactly one row is ever selected.
+  int _selectedRowIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -174,6 +177,26 @@ class _ChartPageState extends State<ChartPage> {
               notation: _notation,
             ),
         };
+        // The select-state row bookkeeping (`REQ-015`): the rows of both
+        // coarse groups concatenated in display order, an id → row index
+        // map for the row-level tap and the coarse kind of the selected
+        // row for the quiz source's batch label.
+        final vowelRows = rowsForKind(PhonemeKind.vowel, catalog.entries);
+        final consonantRows = rowsForKind(
+          PhonemeKind.consonant,
+          catalog.entries,
+        );
+        final allRows = <List<PhonemeCatalogEntry>>[
+          ...vowelRows,
+          ...consonantRows,
+        ];
+        final rowIndexOf = <String, int>{
+          for (var i = 0; i < allRows.length; i++)
+            for (final entry in allRows[i]) entry.id: i,
+        };
+        final selectedKind = _selectedRowIndex < vowelRows.length
+            ? PhonemeKind.vowel
+            : PhonemeKind.consonant;
         return Column(
           children: [
             // The grey status hint strip (decision 2026-11-21, A13):
@@ -206,47 +229,89 @@ class _ChartPageState extends State<ChartPage> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: SegmentedButton<String>(
-                key: const ValueKey('notation-switch'),
-                segments: [
-                  for (final n in Notation.values)
-                    ButtonSegment<String>(
-                      value: n.name,
-                      label: Text(_kNotationLabels[n]!),
-                    ),
-                ],
-                selected: {_notation.name},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _notation = Notation.values.byName(selection.first);
-                  });
-                },
+            // In the row-select state the top bar becomes the fixed
+            // 请选择 bar (`REQ-015`); otherwise the notation switch.
+            if (_selecting)
+              _selectBar(context)
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: SegmentedButton<String>(
+                  key: const ValueKey('notation-switch'),
+                  segments: [
+                    for (final n in Notation.values)
+                      ButtonSegment<String>(
+                        value: n.name,
+                        label: Text(_kNotationLabels[n]!),
+                      ),
+                  ],
+                  selected: {_notation.name},
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _notation = Notation.values.byName(selection.first);
+                    });
+                  },
+                ),
               ),
-            ),
             Expanded(
-              child: ListView(
-                key: const ValueKey('chart-grid'),
-                padding: const EdgeInsets.all(16),
+              child: Stack(
                 children: [
-                  // Two coarse groups only (`REQ-002`, decision 1): the
-                  // fine labels are data, never rendered.
-                  ..._coarseGroupWidgets(
-                    context,
-                    PhonemeKind.vowel,
-                    catalog,
-                    glyphs,
-                    examples,
-                    glyphData,
+                  ListView(
+                    key: const ValueKey('chart-grid'),
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // Two coarse groups only (`REQ-002`, decision 1): the
+                      // fine labels are data, never rendered.
+                      ..._coarseGroupWidgets(
+                        context,
+                        PhonemeKind.vowel,
+                        catalog,
+                        glyphs,
+                        examples,
+                        glyphData,
+                        rowIndexOf,
+                      ),
+                      ..._coarseGroupWidgets(
+                        context,
+                        PhonemeKind.consonant,
+                        catalog,
+                        glyphs,
+                        examples,
+                        glyphData,
+                        rowIndexOf,
+                      ),
+                    ],
                   ),
-                  ..._coarseGroupWidgets(
-                    context,
-                    PhonemeKind.consonant,
-                    catalog,
-                    glyphs,
-                    examples,
-                    glyphData,
+                  // The practice floating button (`REQ-015`, decision 3):
+                  // bottom-right, idle dark labeled 练习; in the select
+                  // state it turns into the confirm control labeled 确定.
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: FloatingActionButton.extended(
+                        key: ValueKey(
+                          _selecting ? 'select-confirm' : 'practice-entry',
+                        ),
+                        backgroundColor: _selecting
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.inverseSurface,
+                        foregroundColor: _selecting
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onInverseSurface,
+                        onPressed: () {
+                          if (_selecting) {
+                            _confirmSelection(context, catalog, selectedKind);
+                          } else {
+                            setState(() {
+                              _selecting = true;
+                              _selectedRowIndex = 0;
+                            });
+                          }
+                        },
+                        label: Text(_selecting ? '确定' : '练习'),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -254,6 +319,62 @@ class _ChartPageState extends State<ChartPage> {
           ],
         );
       },
+    );
+  }
+
+  /// The fixed 请选择 top bar of the row-select state (`REQ-015`): the
+  /// label, the selected-row count and the cancel control. Exactly one
+  /// row is ever selected, so the count is always 1.
+  Widget _selectBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          Text(
+            '请选择',
+            key: const ValueKey('select-bar'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '已选 1 行',
+            key: const ValueKey('select-count'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const Spacer(),
+          TextButton(
+            key: const ValueKey('select-cancel'),
+            onPressed: () => setState(() => _selecting = false),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Confirm (`REQ-015`): starts the shared quiz page over the selected
+  /// row's phonemes; the quiz source carries the row's coarse kind so the
+  /// top-right batch label shows 元音 / 辅音 (`REQ-020`).
+  void _confirmSelection(
+    BuildContext context,
+    PhonemeCatalog catalog,
+    PhonemeKind selectedKind,
+  ) {
+    final vowelRows = rowsForKind(PhonemeKind.vowel, catalog.entries);
+    final allRows = <List<PhonemeCatalogEntry>>[
+      ...vowelRows,
+      ...rowsForKind(PhonemeKind.consonant, catalog.entries),
+    ];
+    final row = allRows[_selectedRowIndex.clamp(0, allRows.length - 1)];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizPage(
+          source: QuizSource.newRow(row, selectedKind),
+          catalog: catalog,
+          mastery: widget.mastery,
+          audioService: widget.audioService,
+        ),
+      ),
     );
   }
 
@@ -267,6 +388,7 @@ class _ChartPageState extends State<ChartPage> {
     Map<String, String> glyphs,
     ExamplesData? examples,
     GlyphData? glyphData,
+    Map<String, int> rowIndexOf,
   ) {
     final rows = rowsForKind(kind, catalog.entries);
     return [
@@ -288,6 +410,7 @@ class _ChartPageState extends State<ChartPage> {
         catalog,
         examples,
         glyphData,
+        rowIndexOf,
       ),
     ];
   }
@@ -300,6 +423,7 @@ class _ChartPageState extends State<ChartPage> {
     PhonemeCatalog catalog,
     ExamplesData? examples,
     GlyphData? glyphData,
+    Map<String, int> rowIndexOf,
   ) {
     final tableRows = <TableRow>[
       for (final row in rows)
@@ -313,6 +437,7 @@ class _ChartPageState extends State<ChartPage> {
                 catalog,
                 examples,
                 glyphData,
+                rowIndexOf[entry.id]!,
               ),
             // Pad the last row so it stays left-aligned inside the grid;
             // the row itself holds only its actual phoneme count.
@@ -367,13 +492,24 @@ class _ChartPageState extends State<ChartPage> {
     PhonemeCatalog catalog,
     ExamplesData? examples,
     GlyphData? glyphData,
+    int rowIndex,
   ) {
     final selected = _selectedId == entry.id;
+    // The row-select highlight (`REQ-015`): in the select state the whole
+    // selected row lights up green — row-level, never per-phoneme.
+    final rowSelected = _selecting && _selectedRowIndex == rowIndex;
     return Padding(
       padding: const EdgeInsets.all(4),
       child: InkWell(
         key: ValueKey('phoneme-${entry.id}'),
         onTap: () {
+          if (_selecting) {
+            // The select state ignores the direct-read toggle and never
+            // navigates: a tap selects the whole row (single-row, not
+            // per-phoneme).
+            setState(() => _selectedRowIndex = rowIndex);
+            return;
+          }
           setState(() {
             _selectedId = entry.id;
           });
@@ -397,10 +533,17 @@ class _ChartPageState extends State<ChartPage> {
         },
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          key: selected ? ValueKey('phoneme-${entry.id}-selected') : null,
+          key: selected
+              ? ValueKey('phoneme-${entry.id}-selected')
+              : rowSelected
+              ? ValueKey('phoneme-${entry.id}-selected-row')
+              : null,
           decoration: BoxDecoration(
+            color: rowSelected ? const Color(0xFFC8E6C9) : null,
             border: Border.all(
-              color: selected
+              color: rowSelected
+                  ? const Color(0xFF2E7D32)
+                  : selected
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.outline,
             ),

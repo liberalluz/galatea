@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
-import 'package:galatea/ui/practice/practice_page.dart';
+import 'package:galatea/ui/practice/quiz_page.dart';
 import 'package:galatea/ui/practice/quiz_session.dart';
 
 /// Synthetic range entries: three phonemes, enough to pin the progress
@@ -20,6 +20,7 @@ List<PhonemeCatalogEntry> _range() => [
 Future<void> pumpSession(
   WidgetTester tester, {
   List<PhonemeCatalogEntry>? range,
+  String? sourceLabel,
 }) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 1.0;
@@ -28,7 +29,11 @@ Future<void> pumpSession(
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: QuizSession(range: range ?? _range(), tasks: _stubTasks()),
+        body: QuizSession(
+          range: range ?? _range(),
+          sourceLabel: sourceLabel ?? '元音',
+          tasks: _stubTasks(),
+        ),
       ),
     ),
   );
@@ -56,49 +61,49 @@ Map<String, QuizTaskBuilder> _stubTasks() => {
   ),
 };
 
-Future<void> pumpPracticeAndConfirm(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 2400);
-  tester.view.devicePixelRatio = 1.0;
-  addTearDown(tester.view.reset);
-
-  final catalog = PhonemeCatalog(
-    version: 'test',
-    sourceLabel: 'test source',
-    entries: _range(),
-  );
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(body: PracticePage(catalogFuture: Future.value(catalog))),
-    ),
-  );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 200));
-
-  await tester.tap(find.byKey(const ValueKey('range-cell-a1')));
-  await tester.pump();
-  await tester.tap(find.byKey(const ValueKey('range-confirm')));
-  await tester.pump();
-}
-
 void main() {
   testWidgets(
-    'confirming the range selection enters the quiz session, replacing the range grid',
+    'the shared quiz page hosts the session for a new-practice source and the label shows the row coarse group (REQ-034, REQ-020)',
     (tester) async {
-      await pumpPracticeAndConfirm(tester);
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final catalog = PhonemeCatalog(
+        version: 'test',
+        sourceLabel: 'test source',
+        entries: _range(),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: QuizPage(
+              source: QuizSource.newRow(_range(), PhonemeKind.vowel),
+              catalog: catalog,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
 
       expect(find.byKey(const ValueKey('session-view')), findsOneWidget);
       expect(find.byKey(const ValueKey('session-progress')), findsOneWidget);
-      expect(find.byKey(const ValueKey('range-grid')), findsNothing);
+      expect(find.byKey(const ValueKey('session-range-label')), findsOneWidget);
+      final label = tester
+          .widget<Text>(find.byKey(const ValueKey('session-range-label')))
+          .data!;
+      expect(label, '元音');
     },
   );
 
   testWidgets(
-    'the range label shows the selected phoneme count matching the denominator',
+    'the batch label follows the source: a consonant row shows 辅音 and a review source shows 复习 (REQ-034, TC-QUIZ-008)',
     (tester) async {
-      await pumpSession(tester);
+      await pumpSession(tester, sourceLabel: '辅音');
+      expect(find.text('辅音'), findsOneWidget);
 
-      expect(find.byKey(const ValueKey('session-range-label')), findsOneWidget);
-      expect(find.text('3 个音位'), findsOneWidget);
+      await pumpSession(tester, sourceLabel: '复习');
+      expect(find.text('复习'), findsOneWidget);
     },
   );
 

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
-import 'package:galatea/main.dart';
-import 'package:galatea/ui/practice/practice_page.dart';
+import 'package:galatea/content/correspondence.dart';
+import 'package:galatea/content/examples.dart';
+import 'package:galatea/content/glyphs.dart';
+import 'package:galatea/domain/mastery_controller.dart';
+import 'package:galatea/domain/mastery_store.dart';
+import 'package:galatea/ui/practice/quiz_page.dart';
+import 'package:galatea/ui/shell/shell_page.dart';
 
 /// Synthetic catalog: 7 front vowels (two grid rows) and 3 bilabial
-/// consonants, enough to pin the 5-column layout, the tag filter and the
-/// selection state machine without touching the bundled assets.
+/// consonants (one grid row), enough to pin the single-row select state
+/// machine without touching the bundled assets.
 PhonemeCatalog _catalog() => PhonemeCatalog(
   version: 'test',
   sourceLabel: 'test source',
@@ -28,148 +33,173 @@ PhonemeCatalog _catalog() => PhonemeCatalog(
   ],
 );
 
-Future<void> pumpPractice(
-  WidgetTester tester, {
-  PhonemeCatalog? catalog,
-}) async {
+Future<void> pumpShell(WidgetTester tester) async {
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 
+  // The mastery controller and the data layers are injected so every
+  // FutureBuilder resolves deterministically on the first pumps; the
+  // asset loaders run real IO and race the fake-async clock (same
+  // preload pattern as the chart suite). The platform-backed
+  // preferences path is the first-run suite's concern.
+  final mastery = MasteryController(store: InMemoryMasteryStore());
+  await mastery.load();
+  CorrespondenceTable? correspondence;
+  ExamplesData? examples;
+  GlyphData? glyphs;
+  await tester.runAsync(() async {
+    correspondence = await loadCorrespondence();
+    examples = await loadExamples();
+    glyphs = await loadGlyphs();
+  });
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PracticePage(catalogFuture: Future.value(catalog ?? _catalog())),
+      home: ShellPage(
+        catalogFuture: Future.value(_catalog()),
+        correspondenceFuture: Future.value(correspondence),
+        examplesFuture: Future.value(examples),
+        glyphsFuture: Future.value(glyphs),
+        masteryFuture: Future.value(mastery),
       ),
     ),
   );
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+/// Enters the row-select state through the floating practice button.
+Future<void> enterSelectState(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('practice-entry')));
+  await tester.pump();
 }
 
 void main() {
   testWidgets(
-    'the range selection screen shows the tag row and the 5-column grid with every phoneme under the default all tag',
+    'the floating practice button enters the in-page row-select state with the 请选择 bar and the first row selected by default',
     (tester) async {
-      await pumpPractice(tester);
+      await pumpShell(tester);
 
-      expect(find.byKey(const ValueKey('range-tags')), findsOneWidget);
-      expect(find.byKey(const ValueKey('range-tag-all')), findsOneWidget);
-      for (final id in ['a1', 'a5', 'a7', 'b1', 'b3']) {
-        expect(find.byKey(ValueKey('range-cell-$id')), findsOneWidget);
-      }
+      expect(find.byKey(const ValueKey('select-bar')), findsNothing);
+      expect(find.byKey(const ValueKey('notation-switch')), findsOneWidget);
 
-      // 5 columns: a1..a5 share the first row, a6 wraps to the next one.
-      final a1 = tester.getRect(find.byKey(const ValueKey('range-cell-a1')));
-      final a5 = tester.getRect(find.byKey(const ValueKey('range-cell-a5')));
-      final a6 = tester.getRect(find.byKey(const ValueKey('range-cell-a6')));
-      expect(a1.top, a5.top);
-      expect(a1.top, isNot(a6.top));
+      await enterSelectState(tester);
+
+      expect(find.byKey(const ValueKey('select-bar')), findsOneWidget);
+      expect(find.byKey(const ValueKey('select-count')), findsOneWidget);
+      expect(find.byKey(const ValueKey('select-cancel')), findsOneWidget);
+      expect(find.byKey(const ValueKey('notation-switch')), findsNothing);
+      // The button turns into the confirm control.
+      expect(find.byKey(const ValueKey('select-confirm')), findsOneWidget);
+      expect(find.byKey(const ValueKey('practice-entry')), findsNothing);
+      // The first row (a1..a5) is selected by default: its cells carry
+      // the row-selected decoration.
+      expect(
+        find.byKey(const ValueKey('phoneme-a1-selected-row')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-a5-selected-row')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-b1-selected-row')),
+        findsNothing,
+      );
     },
   );
 
-  testWidgets('tapping a category tag filters the grid to that group', (
+  testWidgets(
+    'tapping another row moves the single-row selection — exactly one row is ever selected (REQ-015, TC-QUIZ-001)',
+    (tester) async {
+      await pumpShell(tester);
+      await enterSelectState(tester);
+
+      // Tap a consonant-row cell: the selection moves off the default
+      // first vowel row onto the consonant row.
+      await tester.tap(find.byKey(const ValueKey('phoneme-b1')));
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('phoneme-a1-selected-row')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-b1-selected-row')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-b3-selected-row')),
+        findsOneWidget,
+      );
+      // Still exactly one selected row after another tap.
+      await tester.tap(find.byKey(const ValueKey('phoneme-a6')));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('phoneme-b3-selected-row')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-a6-selected-row')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('phoneme-a1-selected-row')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('cancel exits the select state back to the idle chart', (
     tester,
   ) async {
-    await pumpPractice(tester);
+    await pumpShell(tester);
+    await enterSelectState(tester);
 
-    await tester.tap(find.byKey(const ValueKey('range-tag-bilabial')));
+    await tester.tap(find.byKey(const ValueKey('select-cancel')));
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('range-cell-b1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('range-cell-b3')), findsOneWidget);
-    expect(find.byKey(const ValueKey('range-cell-a1')), findsNothing);
-  });
-
-  testWidgets('tapping a cell selects it and tapping again deselects it', (
-    tester,
-  ) async {
-    await pumpPractice(tester);
-
-    await tester.tap(find.byKey(const ValueKey('range-cell-a1')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('range-check-a1')), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('range-cell-a1')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('range-check-a1')), findsNothing);
-  });
-
-  testWidgets('the selection survives tag switching', (tester) async {
-    await pumpPractice(tester);
-
-    await tester.tap(find.byKey(const ValueKey('range-cell-a1')));
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('range-tag-bilabial')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('range-check-a1')), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('range-tag-all')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('range-check-a1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('select-bar')), findsNothing);
+    expect(find.byKey(const ValueKey('notation-switch')), findsOneWidget);
+    expect(find.byKey(const ValueKey('practice-entry')), findsOneWidget);
+    expect(find.byKey(const ValueKey('phoneme-a1-selected-row')), findsNothing);
   });
 
   testWidgets(
-    'the confirm control is gated on the selection and shows the fixed select-first hint while nothing is selected',
+    'confirm starts the shared quiz page over exactly the selected row phonemes with the row coarse-group batch label',
     (tester) async {
-      await pumpPractice(tester);
+      await pumpShell(tester);
+      await enterSelectState(tester);
 
-      final confirm = tester.widget<ButtonStyleButton>(
-        find.byKey(const ValueKey('range-confirm')),
-      );
-      expect(confirm.onPressed, isNull);
-      expect(find.byKey(const ValueKey('range-select-first')), findsOneWidget);
-
-      await tester.tap(find.byKey(const ValueKey('range-cell-a1')));
+      // Move the selection onto the consonant row, then confirm.
+      await tester.tap(find.byKey(const ValueKey('phoneme-b1')));
       await tester.pump();
-
-      final enabled = tester.widget<ButtonStyleButton>(
-        find.byKey(const ValueKey('range-confirm')),
-      );
-      expect(enabled.onPressed, isNotNull);
-      expect(find.byKey(const ValueKey('range-select-first')), findsNothing);
-      expect(find.byKey(const ValueKey('range-count')), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'an empty catalog shows the fixed empty state with a clear control',
-    (tester) async {
-      await pumpPractice(
-        tester,
-        catalog: PhonemeCatalog(
-          version: 'test',
-          sourceLabel: 'test source',
-          entries: const [],
-        ),
-      );
-
-      expect(find.byKey(const ValueKey('range-empty')), findsOneWidget);
-      expect(find.byKey(const ValueKey('range-clear')), findsOneWidget);
-
-      await tester.tap(find.byKey(const ValueKey('range-clear')));
+      await tester.tap(find.byKey(const ValueKey('select-confirm')));
       await tester.pump();
-      expect(find.byKey(const ValueKey('range-tag-all')), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'the shell no longer hosts a practice tab (REQ-031, B26): the legacy range screen is off the tab bar until B27 lands the row-select entry',
-    (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(
-        GalateaApp(catalogFuture: Future.value(_catalog())),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const ValueKey('tab-practice')), findsNothing);
-      expect(find.text('练习'), findsNothing);
-      expect(find.byType(PracticePage), findsNothing);
+      expect(find.byType(QuizPage), findsOneWidget);
+      expect(find.byKey(const ValueKey('quiz-page-session')), findsOneWidget);
+      // The batch label shows the selected row's coarse group (辅音),
+      // not the old denominator text.
+      expect(find.byKey(const ValueKey('session-range-label')), findsOneWidget);
+      final label = tester
+          .widget<Text>(find.byKey(const ValueKey('session-range-label')))
+          .data!;
+      expect(label, '辅音');
+    },
+  );
+
+  testWidgets(
+    'the standalone range screen is abolished: no range grid, tags or per-phoneme selection controls exist anywhere',
+    (tester) async {
+      await pumpShell(tester);
+      await enterSelectState(tester);
+
+      expect(find.byKey(const ValueKey('range-grid')), findsNothing);
+      expect(find.byKey(const ValueKey('range-tags')), findsNothing);
+      expect(find.byKey(const ValueKey('range-cell-a1')), findsNothing);
+      expect(find.byKey(const ValueKey('range-confirm')), findsNothing);
     },
   );
 }
