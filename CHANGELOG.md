@@ -6,7 +6,7 @@
 
 ### Added
 - New requirements `REQ-031`–`REQ-035` (two-tab navigation, the Me-tab four pages, the first-run hint, the shared quiz page, the handwriting overlay) with matching test cases `TC-NAV-001`, `TC-ME-001`, `TC-ME-002`, `TC-QUIZ-008` and `TC-TRACE-003`; the iOS confirmation (`REQ-025`) moves to a v0.2.x patch per the product ruling.
-- The bottom bar shows exactly two tabs — 音标 / 我 (`REQ-031`); the practice tab is removed and quiz, review, settings and about become drill-downs (the practice entry returns with B27 as the chart's row-select flow).
+- The bottom bar shows exactly two tabs, phonetics and Me (`REQ-031`); the practice tab is removed and quiz, review, settings and about become drill-downs (the practice entry returns with B27 as the chart's row-select flow).
 - REQ-015 amended to the single-row ruling (2026-11-21): the chart's right-bottom floating button enters an in-page row-select state where exactly one row is selected at a time — default first row, tapping another row moves the selection — and confirm practices that row; the standalone range screen is abolished (Changed for the REQ-015 / TC-QUIZ-001 wording across the controlled set).
 - The shared quiz page (`REQ-034`): one page hosts the quiz session for both the new-practice source (the selected row) and the review source (the due queue); only the item source differs.
 - The handwriting overlay (`REQ-035`): the top-right pen control opens a free-tracing board covering the detail page — grey model, cross guides, clear-and-rewrite, done returns — with no route change and never a score or verdict.
@@ -17,11 +17,11 @@
 
 ### Changed
 - The controlled spec set (SRS/SDD/STD/STP) restates the v0.2.0 interaction revamp confirmed on 2026-11-21: two coarse chart groups, two-tab navigation, chart floating-button row-select practice entry, same-row detail circles, review entry in the Me tab, shared quiz page, non-scored handwriting overlay, on-device realtime audio synthesis without cache and the placeholder-delivery wording for mouth-shape and example images.
-- The chart renders only the 元音 / 辅音 coarse group headers (`REQ-002`): the fine place-of-articulation labels are data-only, and the shared row model (`row_model.dart`) splits each coarse group into rows of 5 — 24 vowels in five rows ending at 4, 24 consonants in five rows ending at 4, 48 phonemes in total.
+- The chart renders only the vowel / consonant coarse group headers (`REQ-002`): the fine place-of-articulation labels are data-only, and the shared row model (`row_model.dart`) splits each coarse group into rows of 5 — 24 vowels in five rows ending at 4, 24 consonants in five rows ending at 4, 48 phonemes in total.
 - The direct-read hint strip is permanently part of the chart scaffold, grey-on-grey, visible only while the toggle is on, and its tap switches to the Me tab (`REQ-005`, `REQ-022` landing).
 - The chart carries no source footer (`REQ-001`, decision 7): the book title + ISBN attribution moves to the About page with B29.
-- `REQ-020` batch label: the top-right label now shows the selected row's coarse group (元音 / 辅音) or 复习 for a review session, replacing the phoneme-count denominator text.
-- The chart gains the practice floating button, the 请选择 select bar and the green whole-row highlight; the fine group title map is gone.
+- `REQ-020` batch label: the top-right label now shows the selected row's coarse group (vowel / consonant) or review for a review session, replacing the phoneme-count denominator text.
+- The chart gains the practice floating button, the select bar and the green whole-row highlight; the fine group title map is gone.
 - The switcher becomes same-row member circles from the shared row model (`REQ-011`): five circles, the last row at its actual count, defaulting to the tapped phoneme; navigation never crosses rows and the ends of a row do not wrap (the chip strip and the catalog-order prev/next arrows are gone).
 - The zone order follows wireframe P3 (`SDD §3.3`): mouth-shape slot beside the single writing grid, pronunciation button below, then the 2×2 example cards; the per-zone duplicate glyph display is dropped and the star row is reduced.
 - The stroke order auto-plays once when a phoneme appears and tapping the writing grid replays it with pronunciation (decision 13); the separate play control is gone, the stroke-pending state is unchanged.
