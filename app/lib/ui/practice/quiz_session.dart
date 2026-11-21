@@ -71,9 +71,10 @@ const Map<String, QuizTaskBuilder> kDefaultQuizTasks =
 
 /// Quiz session shell (`REQ-020`, `REQ-021`, `TC-QUIZ-006`, `TC-QUIZ-007`):
 /// the progress bar advances per answered item and completes when every
-/// phoneme in the confirmed range has been answered at least once regardless
-/// of verdicts (PRD 完成判定); the range label sits top-right and matches the
-/// progress denominator; feedback appears immediately after an answer; the
+/// phoneme in the source's range has been answered at least once regardless
+/// of verdicts (PRD 完成判定); the top-right batch label shows the source's
+/// coarse group — 元音 / 辅音 for the selected row, 复习 for a review session
+/// (`REQ-020`, decision 4); feedback appears immediately after an answer; the
 /// completion rate shows beside the progress bar from 0% onward.
 ///
 /// The item slot renders the task type from the registry (`B13` decision:
@@ -82,6 +83,7 @@ class QuizSession extends StatefulWidget {
   const QuizSession({
     super.key,
     required this.range,
+    this.sourceLabel = '复习',
     this.catalog,
     Map<String, QuizTaskBuilder>? tasks,
     this.taskType = 'recognition',
@@ -91,8 +93,12 @@ class QuizSession extends StatefulWidget {
     this.onRecord,
   }) : tasks = tasks ?? kDefaultQuizTasks;
 
-  /// The confirmed range, in catalog order. The progress denominator.
+  /// The source's range, in source order. The progress denominator.
   final List<PhonemeCatalogEntry> range;
+
+  /// The top-right batch label (`REQ-020`): the source's coarse group
+  /// (元音 / 辅音) or the review label.
+  final String sourceLabel;
 
   /// The catalog backing the task options; required by the recognition task.
   final PhonemeCatalog? catalog;
@@ -211,7 +217,7 @@ class _QuizSessionState extends State<QuizSession> {
           ),
           const SizedBox(width: 12),
           Text(
-            '${widget.range.length} 个音位',
+            widget.sourceLabel,
             key: const ValueKey('session-range-label'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),

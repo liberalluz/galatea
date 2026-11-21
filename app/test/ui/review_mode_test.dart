@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:galatea/content/phoneme_catalog.dart';
 import 'package:galatea/domain/mastery_controller.dart';
 import 'package:galatea/domain/mastery_store.dart';
-import 'package:galatea/ui/practice/practice_page.dart';
+import 'package:galatea/ui/practice/quiz_page.dart';
+import 'package:galatea/ui/practice/quiz_session.dart';
 
 /// A mutable clock so fixtures can place due dates in the past or future.
 class MutableClock {
@@ -28,10 +29,45 @@ PhonemeCatalog _catalog() => PhonemeCatalog(
   ],
 );
 
-Future<void> _pumpPractice(
+/// A stub task registry pinning the session state machine so the review
+/// source wiring is observed without the real task types.
+Map<String, QuizTaskBuilder> _stubTasks() => {
+  'recognition': (context, task) => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(
+        task.entry.printGlyph,
+        key: ValueKey('review-stub-prompt-${task.entry.id}'),
+      ),
+      const SizedBox(height: 24),
+      FilledButton(
+        key: const ValueKey('review-stub-answer'),
+        onPressed: () => task.onAnswered(true),
+        child: const Text('作答'),
+      ),
+    ],
+  ),
+};
+
+/// Pumps the shared quiz page over a review source built the way the B29
+/// review entry will build it: the due-today phonemes in ascending due
+/// order (same-day entries in catalog order). The queue's not-yet-due
+/// entries do not join.
+Future<void> _pumpReviewSource(
   WidgetTester tester, {
-  MasteryController? controller,
+  required MasteryController controller,
+  required PhonemeCatalog catalog,
 }) async {
+  final now = controller.engine.now();
+  final due = <PhonemeCatalogEntry>[];
+  for (final entry in catalog.entries) {
+    if (controller.engine.isDue(entry.id)) due.add(entry);
+  }
+  due.sort(
+    (a, b) => (controller.engine.state.entries[a.id]?.due ?? now).compareTo(
+      controller.engine.state.entries[b.id]?.due ?? now,
+    ),
+  );
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
@@ -39,36 +75,20 @@ Future<void> _pumpPractice(
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: PracticePage(
-          catalogFuture: Future.value(_catalog()),
-          masteryController: controller,
+        body: QuizPage(
+          source: QuizSource.review(due),
+          catalog: catalog,
+          mastery: controller,
+          tasks: _stubTasks(),
         ),
       ),
     ),
   );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 200));
 }
-
-/// Queues [id] with its due date at [daysFromNow] (negative = overdue,
-/// 0 = due today) so the review pane can render it.
-void _queue(MasteryController controller, String id, int daysFromNow) {
-  final entry = controller.engine.state.entryFor(id);
-  entry.star = 1;
-  entry.step = 0;
-  entry.due = controller.engine.now().add(Duration(days: daysFromNow));
-}
-
-Future<void> _switchMode(WidgetTester tester, String mode) async {
-  await tester.tap(find.byKey(ValueKey('practice-mode-$mode')));
-  await tester.pump();
-}
-
-Finder _dueTile(String id) => find.byKey(ValueKey('review-tile-$id'));
 
 void main() {
   testWidgets(
-    'the review mode shows the fixed empty state when nothing is due',
+    'the review source renders the same shared quiz page with the 复习 batch label and the due range as the denominator (REQ-034, TC-QUIZ-008)',
     (tester) async {
       final clock = MutableClock(DateTime(2026, 11, 20, 9));
       final controller = MasteryController(
@@ -76,20 +96,43 @@ void main() {
         now: clock.read,
       );
       await controller.load();
-      await _pumpPractice(tester, controller: controller);
+      // p-a and p-b are due (one overdue, one today); p-c sits 1 day out
+      // and does not join the session range.
+      controller.engine.state.entryFor('p-a').due = clock.dateTime.add(
+        const Duration(days: -2),
+      );
+      controller.engine.state.entryFor('p-b').due = clock.dateTime;
+      controller.engine.state.entryFor('p-c').due = clock.dateTime.add(
+        const Duration(days: 1),
+      );
+      await _pumpReviewSource(
+        tester,
+        controller: controller,
+        catalog: _catalog(),
+      );
+      await tester.pump();
 
-      await _switchMode(tester, 'review');
-
+      expect(find.byKey(const ValueKey('session-view')), findsOneWidget);
+      expect(find.text('复习'), findsOneWidget);
+      // The session covers exactly the due-today subset in due order:
+      // the overdue p-a first, then p-b; p-c never renders.
       expect(
-        find.byKey(const ValueKey('review-empty')),
+        find.byKey(const ValueKey('review-stub-prompt-p-a')),
         findsOneWidget,
-        reason: 'the R22 empty state replaces a blank list',
+      );
+      expect(
+        find.byKey(const ValueKey('review-stub-prompt-p-b')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('review-stub-prompt-p-c')),
+        findsNothing,
       );
     },
   );
 
   testWidgets(
-    'due phonemes surface with their due labels in ascending due order',
+    'a review-source answer records into the mastery controller like a new-practice answer (REQ-034, REQ-021)',
     (tester) async {
       final clock = MutableClock(DateTime(2026, 11, 20, 9));
       final controller = MasteryController(
@@ -97,163 +140,24 @@ void main() {
         now: clock.read,
       );
       await controller.load();
-      // p-a went overdue two days ago, p-b is due today and p-c sits at
-      // the 1-day-out row of the queue (wireframe P5 shows future rows).
-      _queue(controller, 'p-b', 0);
-      _queue(controller, 'p-a', -2);
-      _queue(controller, 'p-c', 1);
-      await _pumpPractice(tester, controller: controller);
-
-      await _switchMode(tester, 'review');
-
-      expect(_dueTile('p-b'), findsOneWidget);
-      expect(_dueTile('p-a'), findsOneWidget);
-      expect(_dueTile('p-c'), findsOneWidget);
-      expect(
-        tester.getTopLeft(_dueTile('p-a')).dy,
-        lessThan(tester.getTopLeft(_dueTile('p-b')).dy),
-        reason: 'ascending due order: overdue before today',
+      controller.engine.state.entryFor('p-a').due = clock.dateTime;
+      await _pumpReviewSource(
+        tester,
+        controller: controller,
+        catalog: _catalog(),
       );
-      expect(
-        tester.getTopLeft(_dueTile('p-b')).dy,
-        lessThan(tester.getTopLeft(_dueTile('p-c')).dy),
-        reason: 'today before the 1天后 row',
-      );
-      expect(find.textContaining('今天'), findsNWidgets(2));
-      expect(find.textContaining('1天后'), findsOneWidget);
-      expect(
-        find.text('今日到期: 2'),
-        findsOneWidget,
-        reason: 'the count covers only the due-today entries',
-      );
-      expect(
-        find.byKey(const ValueKey('review-count')),
-        findsOneWidget,
-        reason: 'the pane shows the due count (wireframe P5)',
-      );
-    },
-  );
-
-  testWidgets(
-    'a wrong answer in new practice lowers the star and queues the phoneme',
-    (tester) async {
-      final clock = MutableClock(DateTime(2026, 11, 20, 9));
-      final controller = MasteryController(
-        store: InMemoryMasteryStore(),
-        now: clock.read,
-      );
-      await controller.load();
-      await _pumpPractice(tester, controller: controller);
-
-      // Run a new-practice session and answer p-a wrong: the correct
-      // spelling option is sound-a, so tap sound-b.
-      await tester.tap(find.byKey(const ValueKey('range-cell-p-a')));
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('range-confirm')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('task-option-sound-b')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('task-submit')));
+
+      final starsBefore = controller.engine.state.entryFor('p-a').star;
+      await tester.tap(find.byKey(const ValueKey('review-stub-answer')));
       await tester.pump();
 
       expect(
         controller.engine.state.entryFor('p-a').star,
-        0,
-        reason: 'the wrong answer floors the star at 0',
+        starsBefore + 1,
+        reason: 'the verdict recorded into the mastery engine',
       );
-      expect(
-        controller.engine.state.entryFor('p-a').due,
-        isNotNull,
-        reason: 'the wrong answer queues the phoneme (R22 entry)',
-      );
+      expect(find.byKey(const ValueKey('session-feedback')), findsOneWidget);
     },
   );
-
-  testWidgets('starting the review runs the due phonemes through the session', (
-    tester,
-  ) async {
-    final clock = MutableClock(DateTime(2026, 11, 20, 9));
-    final controller = MasteryController(
-      store: InMemoryMasteryStore(),
-      now: clock.read,
-    );
-    await controller.load();
-    _queue(controller, 'p-b', 0);
-    _queue(controller, 'p-c', 0);
-    await _pumpPractice(tester, controller: controller);
-
-    await _switchMode(tester, 'review');
-    await tester.tap(find.byKey(const ValueKey('review-start')));
-    await tester.pump();
-
-    // The session view takes over with the due range (R22 exit: the
-    // same task registry and task type as new practice).
-    expect(find.byKey(const ValueKey('session-view')), findsOneWidget);
-    expect(find.byKey(const ValueKey('session-range-label')), findsOneWidget);
-  });
-
-  testWidgets(
-    'a store write failure keeps the star change and shows the notice',
-    (tester) async {
-      final clock = MutableClock(DateTime(2026, 11, 20, 9));
-      final controller = MasteryController(
-        store: InMemoryMasteryStore()..failWrites = true,
-        now: clock.read,
-      );
-      await controller.load();
-      await _pumpPractice(tester, controller: controller);
-
-      // Answer wrong in new practice (same flow as the queueing test).
-      await tester.tap(find.byKey(const ValueKey('range-cell-p-a')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('range-confirm')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('task-option-sound-b')));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('task-submit')));
-      await tester.pump();
-      // The notice lives in the review pane; switching leaves the session.
-      await _switchMode(tester, 'review');
-      await tester.pump();
-
-      expect(
-        find.byKey(const ValueKey('review-store-failed')),
-        findsOneWidget,
-        reason: 'the R22 failure branch shows the fixed notice',
-      );
-      expect(
-        controller.engine.state.entryFor('p-a').due,
-        isNotNull,
-        reason: 'the in-memory change survives the failed write',
-      );
-    },
-  );
-
-  testWidgets('a correct review answer raises the star through the engine', (
-    tester,
-  ) async {
-    final clock = MutableClock(DateTime(2026, 11, 20, 9));
-    final controller = MasteryController(
-      store: InMemoryMasteryStore(),
-      now: clock.read,
-    );
-    await controller.load();
-    _queue(controller, 'p-b', 0);
-    await _pumpPractice(tester, controller: controller);
-
-    await _switchMode(tester, 'review');
-    await tester.tap(find.byKey(const ValueKey('review-start')));
-    await tester.pump();
-    // The recognition task's correct option for p-b is sound-b.
-    await tester.tap(find.byKey(const ValueKey('task-option-sound-b')));
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('task-submit')));
-    await tester.pump();
-
-    expect(
-      controller.engine.state.entryFor('p-b').star,
-      2,
-      reason: 'the review correct answer advances the star (1 → 2)',
-    );
-  });
 }

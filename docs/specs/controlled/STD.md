@@ -193,13 +193,15 @@ it is a recorded TBD row in the STP.
 - Preconditions: chart page open, direct-read mode off.
 - Steps:
   1. Tap the right-bottom floating button and observe the page state.
-  2. Observe the default selection; toggle additional rows on and off.
+  2. Observe the default selection; tap another row and observe the selection
+     moves to it.
   3. Cancel and re-enter; then confirm.
 - Exit: the button enters an in-page row-select state with the `请选择` top bar
   and the selected-row count; the first row is selected by default (whole row
-  highlighted); rows toggle at row level (multi-select, not per-phoneme);
-  cancel exits the state; confirm starts the quiz on the selected rows; no
-  standalone range screen exists in the app.
+  highlighted); exactly one row is selected at a time — tapping another row
+  moves the selection (single-row, not per-phoneme); cancel exits the state;
+  confirm starts the quiz on the selected row; no standalone range screen
+  exists in the app.
 
 ### `TC-QUIZ-002`
 
@@ -236,11 +238,11 @@ it is a recorded TBD row in the STP.
 ### `TC-QUIZ-006`
 
 - Covers: `REQ-020`
-- Preconditions: a practice session running over known selected rows.
+- Preconditions: a practice session running over a known selected row.
 - Steps: answer items and compare the progress bar and the top-right label
-  against the selected rows.
+  against the selected row.
 - Exit: the bar advances per answered item and the top-right batch label shows
-  vowel / consonant matching the selected rows' coarse group.
+  vowel / consonant matching the selected row's coarse group.
 
 ### `TC-QUIZ-007`
 

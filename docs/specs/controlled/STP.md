@@ -41,7 +41,7 @@ Pass/fail follows the observable exits below; "works" is never an exit.
 | `TC-CONTENT-003` | `REQ-014` | Every example card image loads; a missing image renders the fixed image placeholder, not an empty card. |
 | `TC-ME-001` | `REQ-032` | The Me tab home shows the mastery card and the review status strip; review, settings and about open from it as drill-downs; no Me sub-page is a bottom tab. |
 | `TC-ME-002` | `REQ-033` | The first launch shows the one-time light hint without blocking the page; after dismissal later launches show no hint. |
-| `TC-QUIZ-001` | `REQ-015` | The chart's floating button enters an in-page row-select state (default first row selected, row-level multi-select, cancel exits); confirm starts the quiz on the selected rows; no standalone range screen exists. |
+| `TC-QUIZ-001` | `REQ-015` | The chart's floating button enters an in-page row-select state (default first row selected, single-row selection — tapping another row moves it, cancel exits); confirm starts the quiz on the selected row; no standalone range screen exists. |
 | `TC-QUIZ-002` | `REQ-016` | A recognition task shows a print-glyph stem and exactly 4 spelling options of which exactly 1 is correct. |
 | `TC-QUIZ-003` | `REQ-017` | A listening task plays the audio stem and shows exactly 2 symbol options; the selected option highlights before confirm. |
 | `TC-QUIZ-004` | `REQ-018` | A writing task shows the handwritten model and tracing area and produces a ✓/× verdict for any traced input (leniency per the stroke-overlap threshold decided in the design review). |
