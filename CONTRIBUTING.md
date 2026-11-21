@@ -14,7 +14,7 @@
 |---|---|---|
 | The commit body names `Batch: B<n>` (or `Batch: none`) | `batch.py commit lint` | `process/sdp.md` has a batch table |
 | The named batch exists in the SDP | `batch.py commit lint` | same |
-| The PR body has `- Batch: B<n>`, or `- Batch: none — <reason>` | `batch.py pr --create`, `tools/gate/gate.py`, `tools/ci/pr_gate.py` | a batched PR always; every PR in CI |
+| The PR body has `- Batch: B<n>`, or `- Batch: none — <reason>` | `batch.py pr --create`, `tools/gate/gate.py`, `infra/tool/ci/pr_gate.py` | a batched PR always; every PR in CI |
 | The PR body keeps its sections and carries no placeholder | `batch.py body`, `batch.py pr --prepare` | always |
 | The commit subject follows the configured format | `batch.py commit lint` | a `commit` block is configured |
 | A configured check passes | `batch.py check` | checks are configured |
