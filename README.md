@@ -9,8 +9,8 @@
 
 ## Status
 
-**v0.1.0 is in development.** The scaffold is in place and the requirements are
-being specified against the product definition; nothing is runnable yet.
+**v0.1.0 released.** The chart, detail, practice and review flows run end
+to end on the Web build; the GitHub Pages deployment follows the release.
 
 ## What it is
 

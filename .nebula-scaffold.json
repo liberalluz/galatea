@@ -95,5 +95,8 @@
   "repoLanguage": "en-US",
   "execution": {
     "batch": "infra/tool/batch"
+  },
+  "release": {
+    "tool": "infra/tool/release"
   }
 }

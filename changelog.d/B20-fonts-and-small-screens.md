@@ -1,5 +1,0 @@
-- Batch: B20 — fonts and small screens only; the accessibility and bilingual-audit batches stay with B21/B22
-- Added: the bundled font fallback chain (`TC-QUAL-001`, `REQ-027`): Noto Sans Regular (OFL licence shipped alongside) registered in pubspec and applied as the head of the theme's fontFamilyFallback chain, so the IPA symbols ʃ θ ŋ ɚ render from the bundled file on Web and iOS instead of gambling on system fonts; the chain falls back to system defaults and never blocks the first frame
-- Ruled: the ux-flows R27 字形暂缺 placeholder branch is unreachable with the bundled coverage — no placeholder code ships
-- Changed: the chart grid keeps 5 columns with a per-cell minimum width and scrolls horizontally on viewports of 360 px or narrower instead of clipping or folding — no column is dropped and all 48 phonemes stay reachable (`TC-QUAL-002`, `REQ-028`, the ux-flows R28 failure branch)
-- Pinned: the practice options' 48 px minimum height stays above the 44 pt tap-target floor (`TC-QUAL-002`)
