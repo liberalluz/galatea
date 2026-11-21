@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../audio/audio_gate.dart';
 import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
@@ -30,7 +32,7 @@ import 'row_model.dart';
 ///
 /// Practice entry (`REQ-015`, decision 3, P1): the right-bottom floating
 /// button enters the in-page row-select state — the top bar becomes the
-/// fixed 请选择 bar with the selected-row count and a cancel control, the
+/// fixed select bar with the selected-row count and a cancel control, the
 /// first row is selected by default (whole row highlighted) and tapping
 /// another row moves the single-row selection — exactly one row at a
 /// time; the floating button turns into the confirm control that starts
@@ -38,6 +40,8 @@ import 'row_model.dart';
 /// the select state ignore the direct-read toggle. No standalone range
 /// screen exists.
 
+/// The notation labels are language-neutral abbreviations (ADR-0001);
+/// they stay a fixed map, not copy-table entries.
 const Map<Notation, String> _kNotationLabels = {
   Notation.kk: 'KK',
   Notation.dj: 'DJ',
@@ -132,22 +136,28 @@ class _ChartPageState extends State<ChartPage> {
     }
     if (_audio.state.value == AudioPlaybackState.failed &&
         _lastPlayed != null) {
+      final copy = CopyScope.of(context);
       final entry = _lastPlayed!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('播放失败，重试'),
+          content: Text(copy.playbackFailed),
           action: SnackBarAction(
-            label: '重试',
-            onPressed: () => _playAudio(entry),
+            label: copy.retry,
+            onPressed: () => _playAudio(context, entry),
           ),
         ),
       );
     }
   }
 
-  void _playAudio(PhonemeCatalogEntry entry) {
+  void _playAudio(BuildContext context, PhonemeCatalogEntry entry) {
     _lastPlayed = entry;
-    _audio.play(entry.id, entry.tts.isEmpty ? entry.id : entry.tts);
+    gatedPlay(
+      context,
+      _audio,
+      entry.id,
+      entry.tts.isEmpty ? entry.id : entry.tts,
+    );
   }
 
   @override
@@ -218,7 +228,7 @@ class _ChartPageState extends State<ChartPage> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        '直读模式：点按只发音',
+                        CopyScope.of(context).readingHint,
                         key: const ValueKey('reading-hint'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
@@ -309,7 +319,11 @@ class _ChartPageState extends State<ChartPage> {
                             });
                           }
                         },
-                        label: Text(_selecting ? '确定' : '练习'),
+                        label: Text(
+                          _selecting
+                              ? CopyScope.of(context).selectConfirm
+                              : CopyScope.of(context).practiceEntry,
+                        ),
                       ),
                     ),
                   ),
@@ -322,22 +336,23 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  /// The fixed 请选择 top bar of the row-select state (`REQ-015`): the
+  /// The fixed select top bar of the row-select state (`REQ-015`): the
   /// label, the selected-row count and the cancel control. Exactly one
   /// row is ever selected, so the count is always 1.
   Widget _selectBar(BuildContext context) {
+    final copy = CopyScope.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         children: [
           Text(
-            '请选择',
+            copy.selectBar,
             key: const ValueKey('select-bar'),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(width: 12),
           Text(
-            '已选 1 行',
+            copy.selectCount,
             key: const ValueKey('select-count'),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -345,7 +360,7 @@ class _ChartPageState extends State<ChartPage> {
           TextButton(
             key: const ValueKey('select-cancel'),
             onPressed: () => setState(() => _selecting = false),
-            child: const Text('取消'),
+            child: Text(copy.cancel),
           ),
         ],
       ),
@@ -391,11 +406,12 @@ class _ChartPageState extends State<ChartPage> {
     Map<String, int> rowIndexOf,
   ) {
     final rows = rowsForKind(kind, catalog.entries);
+    final copy = CopyScope.of(context);
     return [
       Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 8),
         child: Text(
-          kind == PhonemeKind.vowel ? kVowelHeader : kConsonantHeader,
+          kind == PhonemeKind.vowel ? copy.vowelHeader : copy.consonantHeader,
           key: ValueKey(
             'group-header-${kind == PhonemeKind.vowel ? 'vowel' : 'consonant'}',
           ),
@@ -516,7 +532,7 @@ class _ChartPageState extends State<ChartPage> {
           if (widget.readingMode) {
             // Reading mode (`REQ-005`): play audio, never navigate — even a
             // failed playback keeps the tap on the chart (wireframe P2).
-            _playAudio(entry);
+            _playAudio(context, entry);
             return;
           }
           Navigator.of(context).push(
@@ -524,6 +540,7 @@ class _ChartPageState extends State<ChartPage> {
               builder: (_) => DetailPage(
                 catalog: catalog,
                 initialId: entry.id,
+                audioService: widget.audioService,
                 examples: examples,
                 glyphs: glyphData,
                 mastery: widget.mastery,
