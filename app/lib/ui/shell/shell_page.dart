@@ -6,11 +6,13 @@ import '../../content/correspondence.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/mastery_prefs_store.dart';
 import '../../domain/mastery_store.dart';
 import '../chart/chart_page.dart';
 import '../me/me_page.dart';
+import '../me/review_page.dart';
 
 /// Root shell: two fixed tabs (chart / me) after the v0.2.0 interaction
 /// revamp (`REQ-031`, decision 2) — quiz, review, settings and about are
@@ -86,7 +88,10 @@ class _ShellPageState extends State<ShellPage> {
   late final Future<MasteryController> _mastery =
       widget.masteryFuture ?? _loadMastery();
 
-  static const List<String> _titles = ['音标', '我'];
+  /// The shell-owned catalog future for the review drill-down: the strip
+  /// deep link and the Me entry both push the review page with it.
+  late final Future<PhonemeCatalog> _catalog =
+      widget.catalogFuture ?? loadPhonemeCatalog();
 
   @override
   void initState() {
@@ -151,11 +156,25 @@ class _ShellPageState extends State<ShellPage> {
     }
   }
 
+  /// The strip deep link (`REQ-022`, B29): the callback lands on the Me
+  /// tab and pushes the review drill-down on top, so returning leaves
+  /// the user where the strip pointed. The mastery controller is the
+  /// resolved snapshot value from the build.
+  void _openReview(MasteryController mastery) {
+    setState(() => _index = 1);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReviewPage(catalogFuture: _catalog, mastery: mastery),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final copy = CopyScope.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_index]),
+        title: Text(_index == 0 ? copy.tabChart : copy.tabMe),
         actions: [
           if (_index == 0)
             Switch(
@@ -184,7 +203,7 @@ class _ShellPageState extends State<ShellPage> {
                       children: [
                         Expanded(
                           child: Text(
-                            '轻提示：点音标看详情；打开右上角开关可直读发音',
+                            copy.firstRunHint,
                             key: const ValueKey('first-run-hint-text'),
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
@@ -192,7 +211,7 @@ class _ShellPageState extends State<ShellPage> {
                         TextButton(
                           key: const ValueKey('first-run-dismiss'),
                           onPressed: _dismissFirstRunHint,
-                          child: const Text('知道了'),
+                          child: Text(copy.firstRunDismiss),
                         ),
                       ],
                     ),
@@ -210,7 +229,7 @@ class _ShellPageState extends State<ShellPage> {
                       audioService: widget.audioService,
                       readingMode: _readingMode,
                       mastery: mastery,
-                      onReviewDeepLink: () => setState(() => _index = 1),
+                      onReviewDeepLink: () => _openReview(mastery),
                     ),
                     MePage(
                       catalogFuture: widget.catalogFuture,
@@ -226,16 +245,16 @@ class _ShellPageState extends State<ShellPage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (index) => setState(() => _index = index),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            key: ValueKey('tab-chart'),
-            icon: Icon(Icons.abc),
-            label: '音标',
+            key: const ValueKey('tab-chart'),
+            icon: const Icon(Icons.abc),
+            label: copy.tabChart,
           ),
           NavigationDestination(
-            key: ValueKey('tab-me'),
-            icon: Icon(Icons.person),
-            label: '我',
+            key: const ValueKey('tab-me'),
+            icon: const Icon(Icons.person),
+            label: copy.tabMe,
           ),
         ],
       ),

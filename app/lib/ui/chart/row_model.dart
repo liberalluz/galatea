@@ -13,9 +13,9 @@ import '../../content/phoneme_catalog.dart';
 /// The grid column count (`REQ-002`, wireframe P1).
 const int kColumns = 5;
 
-/// The two coarse group headers as displayed (`REQ-002`, decision 1).
-const String kVowelHeader = '元音';
-const String kConsonantHeader = '辅音';
+// The coarse group headers (元音 / 辅音) moved into the copy table
+// (`SDD §3.8`): they render through `CopyScope.of(context)` so a
+// language switch covers them.
 
 /// The fine group order inside each coarse group; the chart never shows
 /// these labels, but the order defines how rows fall across the group

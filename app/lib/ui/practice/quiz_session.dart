@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../audio/audio_gate.dart';
 import '../../audio/audio_service.dart';
+import '../../copy/app_copy.dart';
 import '../../content/correspondence.dart';
 import '../../content/glyphs.dart';
 import '../../content/matching_pairs.dart';
@@ -174,9 +176,12 @@ class _QuizSessionState extends State<QuizSession> {
       key: const ValueKey('session-view'),
       children: [
         if (widget.range.isEmpty)
-          const Expanded(
+          Expanded(
             child: Center(
-              child: Text('范围暂不可用', key: ValueKey('session-unavailable')),
+              child: Text(
+                CopyScope.of(context).sessionUnavailable,
+                key: const ValueKey('session-unavailable'),
+              ),
             ),
           )
         else ...[
@@ -186,7 +191,9 @@ class _QuizSessionState extends State<QuizSession> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                _lastCorrect ? '回答正确' : '回答错误',
+                _lastCorrect
+                    ? CopyScope.of(context).feedbackCorrect
+                    : CopyScope.of(context).feedbackWrong,
                 key: const ValueKey('session-feedback'),
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
@@ -266,7 +273,7 @@ Widget _buildPreparingState(BuildContext context, VoidCallback onSkip) {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          '题目准备中',
+          CopyScope.of(context).taskPreparing,
           key: const ValueKey('task-preparing'),
           style: Theme.of(context).textTheme.bodyLarge,
         ),
@@ -274,7 +281,7 @@ Widget _buildPreparingState(BuildContext context, VoidCallback onSkip) {
         OutlinedButton(
           key: const ValueKey('task-skip'),
           onPressed: onSkip,
-          child: const Text('跳过'),
+          child: Text(CopyScope.of(context).skip),
         ),
       ],
     ),
@@ -351,7 +358,7 @@ class _RecognitionTaskBodyState extends State<_RecognitionTaskBody> {
                 : () => widget.task.onAnswered(
                     _selected == widget.options.correct,
                   ),
-            child: const Text('确定'),
+            child: Text(CopyScope.of(context).submit),
           ),
         ],
       ),
@@ -430,7 +437,7 @@ class _ListeningTaskBodyState extends State<_ListeningTaskBody> {
 
   void _play() {
     final entry = widget.task.entry;
-    widget.audio.play(entry.id, entry.tts);
+    gatedPlay(context, widget.audio, entry.id, entry.tts);
   }
 
   @override
@@ -449,7 +456,11 @@ class _ListeningTaskBodyState extends State<_ListeningTaskBody> {
           OutlinedButton(
             key: ValueKey(failed ? 'task-audio-retry' : 'task-audio-play'),
             onPressed: _play,
-            child: Text(failed ? '重试' : '播放'),
+            child: Text(
+              failed
+                  ? CopyScope.of(context).retry
+                  : CopyScope.of(context).audioPlay,
+            ),
           ),
           const SizedBox(height: 24),
           for (final option in widget.options.options)
@@ -475,7 +486,7 @@ class _ListeningTaskBodyState extends State<_ListeningTaskBody> {
                 : () => widget.task.onAnswered(
                     _selected == widget.options.correct,
                   ),
-            child: const Text('确定'),
+            child: Text(CopyScope.of(context).submit),
           ),
         ],
       ),
@@ -578,7 +589,7 @@ class _WritingTaskBodyState extends State<_WritingTaskBody> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '请先在区域内描摹',
+                CopyScope.of(context).traceFirst,
                 key: const ValueKey('trace-first'),
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(color: Theme.of(context).colorScheme.error),
@@ -588,7 +599,7 @@ class _WritingTaskBodyState extends State<_WritingTaskBody> {
           FilledButton(
             key: const ValueKey('task-submit'),
             onPressed: _submit,
-            child: const Text('确定'),
+            child: Text(CopyScope.of(context).submit),
           ),
         ],
       ),
@@ -633,7 +644,14 @@ class _MatchingTaskBodyState extends State<_MatchingTaskBody> {
   void _tapLeft(int index) {
     if (_matched.contains(index)) return;
     final pair = widget.options.pairs[index];
-    widget.task.audioService?.play(pair.entry.id, pair.entry.tts);
+    if (widget.task.audioService != null) {
+      gatedPlay(
+        context,
+        widget.task.audioService!,
+        pair.entry.id,
+        pair.entry.tts,
+      );
+    }
     setState(() => _armed = index);
   }
 

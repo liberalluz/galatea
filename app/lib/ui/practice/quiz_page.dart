@@ -4,6 +4,7 @@ import '../../audio/audio_service.dart';
 import '../../content/correspondence.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
+import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
 import 'quiz_session.dart';
 
@@ -17,7 +18,7 @@ class QuizSource {
   const QuizSource._(this.range, this.kind);
 
   /// A new-practice source over the selected row's phonemes, in row
-  /// order; [kind] drives the batch label (元音 / 辅音).
+  /// order; [kind] drives the batch label (vowel / consonant header).
   factory QuizSource.newRow(
     List<PhonemeCatalogEntry> range,
     PhonemeKind kind,
@@ -34,13 +35,17 @@ class QuizSource {
   /// The coarse kind behind a new-practice source; `null` marks review.
   final PhonemeKind? kind;
 
-  /// The top-right batch label (`REQ-020`): the coarse group of the
-  /// selected row, or the review label for a review session.
-  String get label => switch (kind) {
-    PhonemeKind.vowel => '元音',
-    PhonemeKind.consonant => '辅音',
-    null => '复习',
-  };
+  /// The top-right batch label resolved through the copy table
+  /// (`REQ-020`, `SDD §3.8`): the coarse group of the selected row, or
+  /// the review label for a review session.
+  String label(BuildContext context) {
+    final copy = CopyScope.of(context);
+    return switch (kind) {
+      PhonemeKind.vowel => copy.vowelHeader,
+      PhonemeKind.consonant => copy.consonantHeader,
+      null => copy.reviewLabel,
+    };
+  }
 }
 
 /// The shared quiz page (`REQ-034`, `TC-QUIZ-008`): one page hosting the
@@ -91,7 +96,7 @@ class QuizPage extends StatelessWidget {
           key: const ValueKey('quiz-page-session'),
           range: source.range,
           catalog: catalog,
-          sourceLabel: source.label,
+          sourceLabel: source.label(context),
           tasks: tasks,
           audioService: audioService,
           glyphs: glyphs,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../audio/audio_gate.dart';
 import '../../audio/audio_service.dart';
+import '../../copy/app_copy.dart';
 import '../../content/examples.dart';
 import '../../content/glyphs.dart';
 import '../../content/phoneme_catalog.dart';
@@ -135,7 +137,12 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
   }
 
   void _play() {
-    _audio.play(_entry.id, _entry.tts.isEmpty ? _entry.id : _entry.tts);
+    gatedPlay(
+      context,
+      _audio,
+      _entry.id,
+      _entry.tts.isEmpty ? _entry.id : _entry.tts,
+    );
   }
 
   /// The stroke order auto-plays once when a phoneme appears
@@ -227,7 +234,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
         actions: [
           IconButton(
             key: const ValueKey('detail-pen'),
-            tooltip: '手写练习',
+            tooltip: CopyScope.of(context).penTooltip,
             onPressed: () => setState(() => _overlayOpen = true),
             icon: const Icon(Icons.edit_outlined),
           ),
@@ -274,7 +281,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                       child: _zone(
                         context,
                         key: 'zone-mouth',
-                        label: '口型区',
+                        label: CopyScope.of(context).zoneMouth,
                         child: _mouthSlot(context, _examples),
                       ),
                     ),
@@ -283,7 +290,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                       child: _zone(
                         context,
                         key: 'zone-writing',
-                        label: '书写区',
+                        label: CopyScope.of(context).zoneWriting,
                         child: _writingZone(context),
                       ),
                     ),
@@ -294,13 +301,13 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
               _zone(
                 context,
                 key: 'zone-audio',
-                label: '发音区',
+                label: CopyScope.of(context).zoneAudio,
                 child: _audioControl(context),
               ),
               _zone(
                 context,
                 key: 'zone-words',
-                label: '例词例句',
+                label: CopyScope.of(context).zoneWords,
                 child: _exampleGrid(context, _examples),
               ),
             ],
@@ -370,10 +377,11 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
         final star = mastery.degraded
             ? 0
             : (mastery.engine.state.entries[_entry.id]?.star ?? 0);
+        final copy = CopyScope.of(context);
         final label = switch (star) {
-          >= 3 => '已掌握',
-          >= 1 => '学习中',
-          _ => '未掌握',
+          >= 3 => copy.starMastered,
+          >= 1 => copy.starLearning,
+          _ => copy.starUnstarted,
         };
         return Column(
           children: [
@@ -388,10 +396,10 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
               ],
             ),
             if (mastery.degraded)
-              const Text(
-                '数据待同步',
-                key: ValueKey('star-degraded'),
-                style: TextStyle(color: Color(0xFF5F6368), fontSize: 12),
+              Text(
+                CopyScope.of(context).starDegraded,
+                key: const ValueKey('star-degraded'),
+                style: const TextStyle(color: Color(0xFF5F6368), fontSize: 12),
               ),
           ],
         );
@@ -458,7 +466,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                   child: IgnorePointer(
                     child: Center(
                       child: Text(
-                        '在此描摹',
+                        CopyScope.of(context).traceHint,
                         key: const ValueKey('trace-hint'),
                         style: Theme.of(context).textTheme.bodyMedium
                             ?.copyWith(color: outline),
@@ -478,10 +486,18 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                   ? null
                   : () => _canvasKey.currentState?.clear(),
               icon: const Icon(Icons.restart_alt),
-              label: const Text('清除'),
+              label: Text(CopyScope.of(context).clear),
             ),
-            const Spacer(),
-            _strokeControl(context),
+            const SizedBox(width: 8),
+            // The playback state shares the half-width zone row with the
+            // clear control: it wraps instead of overflowing when the
+            // longer copy table string lands beside the button.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _strokeControl(context),
+              ),
+            ),
           ],
         ),
       ],
@@ -497,7 +513,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
     final glyph = _glyph;
     if (glyph == null || glyph.strokes.isEmpty) {
       return Text(
-        '笔顺准备中',
+        CopyScope.of(context).strokePending,
         key: const ValueKey('stroke-pending'),
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: outline),
       );
@@ -558,7 +574,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
       ),
       alignment: Alignment.center,
       child: Text(
-        '口型图准备中',
+        CopyScope.of(context).mouthPending,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: outline),
       ),
     );
@@ -675,7 +691,7 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
       AudioPlaybackState.failed => TextButton(
         key: const ValueKey('audio-retry'),
         onPressed: _play,
-        child: const Text('播放失败，重试'),
+        child: Text(CopyScope.of(context).playbackFailed),
       ),
     };
     return Center(child: child);
@@ -700,7 +716,10 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Text('手写练习', style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      CopyScope.of(context).overlayTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const Spacer(),
                     Semantics(
                       excludeSemantics: true,
@@ -742,13 +761,13 @@ class _DetailPageState extends State<DetailPage> with TickerProviderStateMixin {
                       key: const ValueKey('overlay-clear'),
                       onPressed: () => _overlayCanvasKey.currentState?.clear(),
                       icon: const Icon(Icons.restart_alt),
-                      label: const Text('清除重写'),
+                      label: Text(CopyScope.of(context).overlayClear),
                     ),
                     const Spacer(),
                     FilledButton(
                       key: const ValueKey('overlay-done'),
                       onPressed: () => setState(() => _overlayOpen = false),
-                      child: const Text('完成'),
+                      child: Text(CopyScope.of(context).overlayDone),
                     ),
                   ],
                 ),

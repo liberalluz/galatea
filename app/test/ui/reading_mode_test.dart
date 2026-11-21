@@ -165,16 +165,22 @@ void main() {
   );
 
   testWidgets(
-    'tapping the visible hint strip switches to the Me tab (REQ-022 landing)',
+    'tapping the visible hint strip lands on the Me tab and pushes the review drill-down (REQ-022)',
     (tester) async {
       await pumpApp(tester, FakeAudioService());
 
       await toggleReadingMode(tester);
       await tester.tap(find.byKey(const ValueKey('reading-hint-strip')));
       await tester.pump();
+      await tester.pump();
 
       final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-      expect(bar.selectedIndex, 1, reason: 'the strip deep-links to Me');
+      expect(bar.selectedIndex, 1, reason: 'the strip lands on the Me tab');
+      expect(
+        find.byKey(const ValueKey('review-empty')),
+        findsOneWidget,
+        reason: 'the review drill-down is pushed on top',
+      );
     },
   );
 

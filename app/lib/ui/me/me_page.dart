@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../../content/phoneme_catalog.dart';
+import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
+import 'about_page.dart';
+import 'review_page.dart';
+import 'settings_page.dart';
 
-/// The Me tab's mastery statistics (`REQ-023`, `TC-REVIEW-002`, wireframe
-/// P5 right half): the three summary rows over the catalog denominator
-/// (never multiplied by notation — ux-flows R23 step 3), the KK/DJ/IPA
-/// display filter whose switching leaves every count identical (the
-/// stars are shared across the three notations, ADR-0001), and the
-/// fixed empty notice (ux-flows R23 empty state).
+/// The Me tab home (`REQ-032`, wireframe P5): the mastery statistics
+/// card over the catalog denominator (never multiplied by notation —
+/// ux-flows R23 step 3) with the KK/DJ/IPA display filter whose
+/// switching leaves every count identical (the stars are shared across
+/// the three notations, ADR-0001) and the fixed empty notice; under it
+/// the review status strip showing the due count and hidden when none
+/// is due or the state is unavailable, and the three drill-down entries
+/// to review / settings / about. The bottom bar stays chart / Me only
+/// (`REQ-031`) — these pages are drill-downs, never tabs.
 class MePage extends StatefulWidget {
   const MePage({
     super.key,
@@ -28,6 +35,9 @@ class MePage extends StatefulWidget {
 }
 
 class _MePageState extends State<MePage> {
+  late final Future<PhonemeCatalog> _catalog =
+      widget.catalogFuture ?? loadPhonemeCatalog();
+
   /// The display notation of the filter chips; switching it is the R23
   /// display filter — the counts and stars are identical under all
   /// three (TC-REVIEW-002 exit).
@@ -39,10 +49,31 @@ class _MePageState extends State<MePage> {
     'ipa': 'IPA',
   };
 
+  /// The due-today count from the engine; `null` while the catalog has
+  /// not resolved (the strip stays hidden until it can be computed).
+  int? _dueCount(PhonemeCatalog catalog) {
+    if (widget.masteryController.degraded) {
+      return null;
+    }
+    final engine = widget.masteryController.engine;
+    return catalog.entries.where((entry) => engine.isDue(entry.id)).length;
+  }
+
+  void _openReview(PhonemeCatalog catalog) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ReviewPage(
+          catalogFuture: Future.value(catalog),
+          mastery: widget.masteryController,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<PhonemeCatalog>(
-      future: widget.catalogFuture ?? loadPhonemeCatalog(),
+      future: _catalog,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -50,13 +81,81 @@ class _MePageState extends State<MePage> {
         final catalog = snapshot.data!;
         return ListenableBuilder(
           listenable: widget.masteryController,
-          builder: (context, _) => _statistics(context, catalog),
+          builder: (context, _) => _home(context, catalog),
         );
       },
     );
   }
 
-  Widget _statistics(BuildContext context, PhonemeCatalog catalog) {
+  Widget _home(BuildContext context, PhonemeCatalog catalog) {
+    final copy = CopyScope.of(context);
+    final theme = Theme.of(context);
+    final dueCount = _dueCount(catalog);
+    return ListView(
+      key: const ValueKey('me-page'),
+      padding: const EdgeInsets.all(16),
+      children: [
+        _statisticsCard(context, catalog),
+        // The review status strip (`REQ-032`): due count with a drill
+        // into the review queue; hidden when none is due or the count
+        // cannot be computed (degraded state — never inventing data).
+        if (dueCount != null && dueCount > 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Card(
+              child: InkWell(
+                key: const ValueKey('me-review-strip'),
+                onTap: () => _openReview(catalog),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${copy.reviewStrip} $dueCount',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ListTile(
+          key: const ValueKey('entry-review'),
+          leading: const Icon(Icons.replay),
+          title: Text(copy.entryReview),
+          onTap: () => _openReview(catalog),
+        ),
+        ListTile(
+          key: const ValueKey('entry-settings'),
+          leading: const Icon(Icons.settings_outlined),
+          title: Text(copy.entrySettings),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute<void>(builder: (_) => const SettingsPage())),
+        ),
+        ListTile(
+          key: const ValueKey('entry-about'),
+          leading: const Icon(Icons.info_outline),
+          title: Text(copy.entryAbout),
+          onTap: () => Navigator.of(context)
+              .push(MaterialPageRoute<void>(builder: (_) => const AboutPage())),
+        ),
+      ],
+    );
+  }
+
+  /// The mastery statistics card (`REQ-023`, `TC-REVIEW-002`): the three
+  /// summary rows over the catalog denominator with the notation filter.
+  Widget _statisticsCard(BuildContext context, PhonemeCatalog catalog) {
+    final copy = CopyScope.of(context);
+    final theme = Theme.of(context);
     final entries = widget.masteryController.engine.state.entries;
     var mastered = 0;
     var learning = 0;
@@ -71,63 +170,66 @@ class _MePageState extends State<MePage> {
         unstarted += 1;
       }
     }
-    final theme = Theme.of(context);
-    return ListView(
-      key: const ValueKey('me-page'),
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text('掌握度', style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
-        // The notation filter: three display-only chips (TC-REVIEW-002
-        // step 2). Switching never changes the counts — the acceptance
-        // itself pins the invariance.
-        Wrap(
-          spacing: 8,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final entry in _notationLabels.entries)
-              ChoiceChip(
-                key: ValueKey('me-filter-${entry.key}'),
-                label: Text(entry.value),
-                selected: _notation == entry.key,
-                onSelected: (_) => setState(() => _notation = entry.key),
+            Text(copy.masteryTitle, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
+            // The notation filter: three display-only chips (TC-REVIEW-002
+            // step 2). Switching never changes the counts — the acceptance
+            // itself pins the invariance.
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final entry in _notationLabels.entries)
+                  ChoiceChip(
+                    key: ValueKey('me-filter-${entry.key}'),
+                    label: Text(entry.value),
+                    selected: _notation == entry.key,
+                    onSelected: (_) => setState(() => _notation = entry.key),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (entries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  copy.meEmptyNotice,
+                  key: const ValueKey('me-empty-notice'),
+                  style: const TextStyle(color: Color(0xFF5F6368)),
+                ),
               ),
+            _statsRow(
+              context,
+              key: 'me-row-mastered',
+              label: copy.rowMastered,
+              count: mastered,
+            ),
+            _statsRow(
+              context,
+              key: 'me-row-learning',
+              label: copy.rowLearning,
+              count: learning,
+            ),
+            _statsRow(
+              context,
+              key: 'me-row-unstarted',
+              label: copy.rowUnstarted,
+              count: unstarted,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${catalog.entries.length} ${copy.phonemeUnit}',
+              key: const ValueKey('me-total'),
+              style: theme.textTheme.bodyLarge,
+            ),
           ],
         ),
-        const SizedBox(height: 8),
-        if (entries.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              '开始练习后显示掌握度',
-              key: ValueKey('me-empty-notice'),
-              style: TextStyle(color: Color(0xFF5F6368)),
-            ),
-          ),
-        _statsRow(
-          context,
-          key: 'me-row-mastered',
-          label: '已掌握 3★',
-          count: mastered,
-        ),
-        _statsRow(
-          context,
-          key: 'me-row-learning',
-          label: '学习中 1–2★',
-          count: learning,
-        ),
-        _statsRow(
-          context,
-          key: 'me-row-unstarted',
-          label: '未掌握 0★',
-          count: unstarted,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '合计 ${catalog.entries.length}',
-          key: const ValueKey('me-total'),
-          style: theme.textTheme.bodyLarge,
-        ),
-      ],
+      ),
     );
   }
 
@@ -144,7 +246,10 @@ class _MePageState extends State<MePage> {
         children: [
           Text(label, style: Theme.of(context).textTheme.bodyLarge),
           const Spacer(),
-          Text('$count 音位', style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            '$count ${CopyScope.of(context).phonemeUnit}',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
         ],
       ),
     );

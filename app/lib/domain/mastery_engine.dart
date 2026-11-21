@@ -103,12 +103,13 @@ class MasteryEngine {
     return !now().isBefore(entry.due!);
   }
 
-  /// The due label of a queued phoneme: 同日 "今天", otherwise "N天后".
-  String dueLabel(DateTime due) {
+  /// The whole days between today and the due day (negative = overdue);
+  /// the presentation layer renders the label from this through the copy
+  /// table, so the engine carries no user-facing strings.
+  int dueDays(DateTime due) {
     final today = now();
     final from = DateTime(today.year, today.month, today.day);
     final until = DateTime(due.year, due.month, due.day);
-    final days = until.difference(from).inDays;
-    return days <= 0 ? '今天' : '$days天后';
+    return until.difference(from).inDays;
   }
 }
