@@ -9,8 +9,10 @@
 
 ## Status
 
-**v0.1.0 released.** The chart, detail, practice and review flows run end
-to end on the Web build; the GitHub Pages deployment follows the release.
+**v0.2.0 released.** The interaction revamp is live: two top-level tabs
+(phonetics and Me), the chart's row-select practice entry, the shared quiz
+page and the handwriting overlay; review, settings and about move into the
+Me tab. The GitHub Pages deployment serves this release.
 
 ## What it is
 
