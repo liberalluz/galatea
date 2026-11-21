@@ -48,35 +48,84 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  testWidgets('the shell shows three fixed tabs with chart as the default', (
+  testWidgets('the shell shows two fixed tabs with chart as the default', (
     tester,
   ) async {
     await pumpApp(tester);
 
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations.length, 3);
+    expect(bar.destinations.length, 2, reason: 'REQ-031: exactly two tabs');
     expect(bar.selectedIndex, 0, reason: 'chart is the default tab');
     final labels = tester
         .widgetList<NavigationDestination>(find.byType(NavigationDestination))
         .map((d) => d.label)
         .toList();
-    expect(labels, ['音标', '练习', '我']);
+    expect(labels, ['音标', '我']);
+    expect(find.byKey(const ValueKey('tab-practice')), findsNothing);
   });
 
   testWidgets(
-    'the chart grid renders 5 columns grouped by category, 48 phonemes once each',
+    'the chart renders two coarse group tables: 24 vowels in five rows ending at four, 24 consonants in five rows ending at four',
     (tester) async {
       await pumpApp(tester);
 
-      // Each category group renders its own table, so no row crosses a group
-      // boundary (3 vowel groups + 8 consonant place groups).
+      // Two coarse groups only (REQ-002, decision 1): one table per
+      // coarse kind, rows of 5 across the fine groups.
       final renderTables = tester
           .renderObjectList<RenderTable>(find.byType(Table))
           .toList();
-      expect(renderTables.length, 11);
+      expect(renderTables.length, 2);
 
-      for (final table in renderTables) {
-        expect(table.columns, 5, reason: 'the grid is 5 columns wide');
+      /// The phoneme ids of one grid row: the padded tail cell is null.
+      List<String?> rowPhonemeIds(TableRow row) => [
+        for (final cell in row.children)
+          cell is Padding && cell.child is InkWell
+              ? ((cell.child as InkWell).key! as ValueKey<String>).value
+              : null,
+      ];
+
+      final vowelTable = tester.widget<Table>(
+        find.byKey(const ValueKey('chart-table-vowel')),
+      );
+      final consonantTable = tester.widget<Table>(
+        find.byKey(const ValueKey('chart-table-consonant')),
+      );
+      expect(vowelTable.children.length, 5, reason: '24 vowels -> 5 rows');
+      expect(rowPhonemeIds(vowelTable.children.last), [
+        'phoneme-u',
+        'phoneme-ʊ',
+        'phoneme-ʊr',
+        'phoneme-aʊ',
+        null,
+      ], reason: 'the last vowel row holds its actual count of 4');
+      expect(
+        consonantTable.children.length,
+        5,
+        reason: '24 consonants -> 5 rows',
+      );
+      expect(rowPhonemeIds(consonantTable.children.last), [
+        'phoneme-k',
+        'phoneme-g',
+        'phoneme-ŋ',
+        'phoneme-h',
+        null,
+      ], reason: 'the last consonant row holds its actual count of 4');
+      for (final table in [vowelTable, consonantTable]) {
+        expect(
+          table.children.every((row) => row.children.length == 5),
+          isTrue,
+          reason: 'the grid is 5 columns wide (the last row pads up)',
+        );
+      }
+
+      expect(find.text('元音'), findsOneWidget);
+      expect(find.text('辅音'), findsOneWidget);
+      for (final fine in ['元音·前', '元音·中', '元音·后', '辅音·双唇', '辅音·声门']) {
+        expect(
+          find.text(fine),
+          findsNothing,
+          reason: 'fine category labels are never rendered (REQ-002)',
+        );
       }
 
       for (final id in [
@@ -151,11 +200,12 @@ void main() {
     expect(find.text('i'), findsWidgets);
   });
 
-  testWidgets('the chart page shows the labelled data source line', (
+  testWidgets('the chart carries no source footer (REQ-001, decision 7)', (
     tester,
   ) async {
     await pumpApp(tester);
 
-    expect(find.textContaining('9787119061207'), findsOneWidget);
+    expect(find.textContaining('9787119061207'), findsNothing);
+    expect(find.textContaining('来源'), findsNothing);
   });
 }

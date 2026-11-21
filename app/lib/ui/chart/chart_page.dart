@@ -8,20 +8,29 @@ import '../../content/phoneme_catalog.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/notation.dart';
 import '../detail/detail_page.dart';
+import 'row_model.dart';
 
-/// Chart page: 5-column print-glyph grid grouped by phonetic category
-/// (`REQ-002`, wireframe P1). A notation switch (KK / DJ / IPA) sits above
-/// the grid; KK is the default and switching re-renders the symbols while
-/// the selected phoneme stays selected (`REQ-003`, `TC-CHART-003`).
-/// Tapping a symbol opens the detail route in the default state
-/// (`REQ-004`); in reading mode (`REQ-005`, wireframe P2) the tap plays the
-/// phoneme's audio through the audio service and stays on the chart, the
-/// fixed hint line shows above the grid while the mode is on, and a failed
-/// playback shows the short failure notice without ever navigating.
+/// Chart page: 5-column print-glyph grid under the two coarse group
+/// headers 元音 / 辅音 (`REQ-002`, wireframe P1, decision 1) — the fine
+/// place-of-articulation labels stay in the data but are never rendered,
+/// and rows follow the shared row model (`row_model.dart`): 5 per row,
+/// the last row at its actual count. A notation switch (KK / DJ / IPA)
+/// sits above the grid; KK is the default and switching re-renders the
+/// symbols while the selected phoneme stays selected (`REQ-003`,
+/// `TC-CHART-003`). Tapping a symbol opens the detail route in the
+/// default state (`REQ-004`); in reading mode (`REQ-005`, wireframe P2)
+/// the tap plays the phoneme's audio through the audio service and stays
+/// on the chart, the grey status hint strip is permanently part of the
+/// scaffold and visible only while the mode is on (decision 2026-11-21,
+/// A13), its tap deep-links to the Me tab (`REQ-022` landing, review
+/// page follows in B29), and a failed playback shows the short failure
+/// notice without ever navigating. The chart carries no source footer:
+/// the attribution lives only on the About page (`REQ-001`, decision 7).
 
 /// Chinese titles for the phonetic category groups, keyed by the catalog's
-/// `group` field. Shared with the practice range selection (`REQ-015`), so
-/// both screens label the same categories identically.
+/// `group` field. No longer rendered by the chart (only the two coarse
+/// headers show, `REQ-002`); kept as the practice range-selection label
+/// source (`REQ-015` legacy screen) until B27 replaces that flow.
 const Map<String, String> kGroupTitles = {
   'front': '元音·前',
   'central': '元音·中',
@@ -52,6 +61,7 @@ class ChartPage extends StatefulWidget {
     this.audioService,
     this.readingMode = false,
     this.mastery,
+    this.onReviewDeepLink,
   });
 
   /// Injectable for widget tests; production loads the bundled assets.
@@ -71,6 +81,11 @@ class ChartPage extends StatefulWidget {
   /// Reading mode (`REQ-005`): owned by the shell's top-right switch; on,
   /// grid taps play audio and stay; off, they navigate to detail.
   final bool readingMode;
+
+  /// The Me-tab deep link for the status hint strip (`REQ-022` landing,
+  /// B26 scope): the strip tap switches to the Me tab; the review page
+  /// itself lands in B29. `null` leaves the strip inert (unit harnesses).
+  final VoidCallback? onReviewDeepLink;
 
   /// The shell-owned mastery controller (`B18`); handed to the detail
   /// page for the star rating row. `null` keeps the row absent.
@@ -161,18 +176,36 @@ class _ChartPageState extends State<ChartPage> {
         };
         return Column(
           children: [
-            if (widget.readingMode)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '直读模式：点按只发音',
-                    key: const ValueKey('reading-hint'),
-                    style: Theme.of(context).textTheme.bodyMedium,
+            // The grey status hint strip (decision 2026-11-21, A13):
+            // permanently part of the scaffold, visible only while the
+            // reading mode is on, tap deep-links to the Me tab.
+            Visibility(
+              visible: widget.readingMode,
+              maintainState: true,
+              child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: InkWell(
+                  key: const ValueKey('reading-hint-strip'),
+                  onTap: widget.onReviewDeepLink,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '直读模式：点按只发音',
+                        key: const ValueKey('reading-hint'),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: SegmentedButton<String>(
@@ -197,19 +230,23 @@ class _ChartPageState extends State<ChartPage> {
                 key: const ValueKey('chart-grid'),
                 padding: const EdgeInsets.all(16),
                 children: [
-                  for (final group in _groupedEntries(catalog.entries))
-                    ..._groupWidgets(
-                      context,
-                      group,
-                      glyphs,
-                      catalog,
-                      examples,
-                      glyphData,
-                    ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '来源：${catalog.sourceLabel}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  // Two coarse groups only (`REQ-002`, decision 1): the
+                  // fine labels are data, never rendered.
+                  ..._coarseGroupWidgets(
+                    context,
+                    PhonemeKind.vowel,
+                    catalog,
+                    glyphs,
+                    examples,
+                    glyphData,
+                  ),
+                  ..._coarseGroupWidgets(
+                    context,
+                    PhonemeKind.consonant,
+                    catalog,
+                    glyphs,
+                    examples,
+                    glyphData,
                   ),
                 ],
               ),
@@ -220,70 +257,75 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  /// Groups entries preserving the catalog order; no row crosses a group.
-  static List<MapEntry<String, List<PhonemeCatalogEntry>>> _groupedEntries(
-    List<PhonemeCatalogEntry> entries,
-  ) {
-    final groups = <String, List<PhonemeCatalogEntry>>{};
-    for (final entry in entries) {
-      groups.putIfAbsent(entry.group, () => []).add(entry);
-    }
-    return groups.entries.toList();
-  }
-
-  List<Widget> _groupWidgets(
+  /// One coarse group = its header plus the shared-row-model table.
+  /// Rows follow `row_model.dart`: 5 per row across the fine groups, the
+  /// last row at its actual count.
+  List<Widget> _coarseGroupWidgets(
     BuildContext context,
-    MapEntry<String, List<PhonemeCatalogEntry>> group,
-    Map<String, String> glyphs,
+    PhonemeKind kind,
     PhonemeCatalog catalog,
+    Map<String, String> glyphs,
     ExamplesData? examples,
     GlyphData? glyphData,
   ) {
+    final rows = rowsForKind(kind, catalog.entries);
     return [
       Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 8),
         child: Text(
-          kGroupTitles[group.key] ?? group.key,
+          kind == PhonemeKind.vowel ? kVowelHeader : kConsonantHeader,
+          key: ValueKey(
+            'group-header-${kind == PhonemeKind.vowel ? 'vowel' : 'consonant'}',
+          ),
           style: Theme.of(context).textTheme.titleMedium,
         ),
       ),
-      _groupTable(context, group.value, glyphs, catalog, examples, glyphData),
+      _coarseGroupTable(
+        context,
+        kind,
+        rows,
+        glyphs,
+        catalog,
+        examples,
+        glyphData,
+      ),
     ];
   }
 
-  Widget _groupTable(
+  Widget _coarseGroupTable(
     BuildContext context,
-    List<PhonemeCatalogEntry> entries,
+    PhonemeKind kind,
+    List<List<PhonemeCatalogEntry>> rows,
     Map<String, String> glyphs,
     PhonemeCatalog catalog,
     ExamplesData? examples,
     GlyphData? glyphData,
   ) {
-    const columns = 5;
-    final rows = <TableRow>[];
-    for (var i = 0; i < entries.length; i += columns) {
-      final chunk = entries.sublist(
-        i,
-        i + columns > entries.length ? entries.length : i + columns,
-      );
-      final cells = <Widget>[
-        for (final entry in chunk)
-          _glyphCell(
-            context,
-            entry,
-            glyphs[entry.id] ?? entry.printGlyph,
-            catalog,
-            examples,
-            glyphData,
-          ),
-        // Pad the last row so it stays left-aligned inside the 5-column grid.
-        for (var pad = chunk.length; pad < columns; pad++) const SizedBox(),
-      ];
-      rows.add(TableRow(children: cells));
-    }
+    final tableRows = <TableRow>[
+      for (final row in rows)
+        TableRow(
+          children: [
+            for (final entry in row)
+              _glyphCell(
+                context,
+                entry,
+                glyphs[entry.id] ?? entry.printGlyph,
+                catalog,
+                examples,
+                glyphData,
+              ),
+            // Pad the last row so it stays left-aligned inside the grid;
+            // the row itself holds only its actual phoneme count.
+            for (var pad = row.length; pad < kColumns; pad++) const SizedBox(),
+          ],
+        ),
+    ];
     return _narrowGuard(
       Table(
-        children: rows,
+        key: ValueKey(
+          'chart-table-${kind == PhonemeKind.vowel ? 'vowel' : 'consonant'}',
+        ),
+        children: tableRows,
         defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       ),
     );

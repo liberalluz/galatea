@@ -154,7 +154,7 @@ void main() {
   );
 
   testWidgets(
-    'the shell replaces the practice placeholder with the range selection screen',
+    'the shell no longer hosts a practice tab (REQ-031, B26): the legacy range screen is off the tab bar until B27 lands the row-select entry',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -167,11 +167,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('练习').last);
-      await tester.pump();
-
-      expect(find.byKey(const ValueKey('range-grid')), findsOneWidget);
-      expect(find.byType(PracticePage), findsOneWidget);
+      expect(find.byKey(const ValueKey('tab-practice')), findsNothing);
+      expect(find.text('练习'), findsNothing);
+      expect(find.byType(PracticePage), findsNothing);
     },
   );
 }

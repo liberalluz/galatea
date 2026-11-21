@@ -165,6 +165,20 @@ void main() {
   );
 
   testWidgets(
+    'tapping the visible hint strip switches to the Me tab (REQ-022 landing)',
+    (tester) async {
+      await pumpApp(tester, FakeAudioService());
+
+      await toggleReadingMode(tester);
+      await tester.tap(find.byKey(const ValueKey('reading-hint-strip')));
+      await tester.pump();
+
+      final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.selectedIndex, 1, reason: 'the strip deep-links to Me');
+    },
+  );
+
+  testWidgets(
     'a failed playback in reading mode shows the short failure notice and never opens the detail page',
     (tester) async {
       final audio = FailingAudioService();
