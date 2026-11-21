@@ -1,0 +1,296 @@
+{
+  "version": "v1",
+  "source": {
+    "label": "例词例句 ED 初稿（可替换，非教材原文）"
+  },
+  "phonemes": [
+    {"id": "i", "examples": [
+      {"word": "see", "sentence": "I see the sea."},
+      {"word": "tree", "sentence": "The green tree is tall."},
+      {"word": "sweet", "sentence": "This tea tastes sweet."},
+      {"word": "keep", "sentence": "Please keep your seat."}
+    ]},
+    {"id": "ɪ", "examples": [
+      {"word": "ship", "sentence": "The big ship sits low."},
+      {"word": "fish", "sentence": "Fish swim in the pond."},
+      {"word": "sit", "sentence": "Sit on the big cushion."},
+      {"word": "this", "sentence": "This city is pretty."}
+    ]},
+    {"id": "e", "examples": [
+      {"word": "tape", "sentence": "Play the tape again."},
+      {"word": "eight", "sentence": "It is eight ten now."},
+      {"word": "cake", "sentence": "The cake tastes great."},
+      {"word": "train", "sentence": "The train comes on time."}
+    ]},
+    {"id": "ɛ", "examples": [
+      {"word": "pen", "sentence": "The red pen is on the desk."},
+      {"word": "bed", "sentence": "The cat sleeps on the bed."},
+      {"word": "egg", "sentence": "I eat an egg at ten."},
+      {"word": "best", "sentence": "The yellow vest is the best."}
+    ]},
+    {"id": "æ", "examples": [
+      {"word": "cat", "sentence": "A black cat sits on the mat."},
+      {"word": "hand", "sentence": "Wash your hands well."},
+      {"word": "apple", "sentence": "I eat an apple."},
+      {"word": "happy", "sentence": "The family feels happy."}
+    ]},
+    {"id": "aɪ", "examples": [
+      {"word": "eye", "sentence": "My right eye is fine."},
+      {"word": "five", "sentence": "Give me five."},
+      {"word": "night", "sentence": "Good night, sleep tight."},
+      {"word": "time", "sentence": "Time to ride a bike."}
+    ]},
+    {"id": "ɪr", "examples": [
+      {"word": "ear", "sentence": "I hear with my ears."},
+      {"word": "near", "sentence": "The park is near here."},
+      {"word": "dear", "sentence": "My dear friend is here."},
+      {"word": "year", "sentence": "Happy New Year!"}
+    ]},
+    {"id": "ɛr", "examples": [
+      {"word": "air", "sentence": "The fresh air is nice."},
+      {"word": "hair", "sentence": "Her hair is fair."},
+      {"word": "care", "sentence": "Take care of the bear."},
+      {"word": "share", "sentence": "We share a pair of chairs."}
+    ]},
+    {"id": "ɪə", "examples": [
+      {"word": "really", "sentence": "I really mean it."},
+      {"word": "area", "sentence": "The play area is quiet."},
+      {"word": "here", "sentence": "Come here, dear."},
+      {"word": "period", "sentence": "We read the whole period."}
+    ]},
+    {"id": "iə", "examples": [
+      {"word": "radio", "sentence": "I listen to the radio."},
+      {"word": "media", "sentence": "Social media helps learning."},
+      {"word": "serious", "sentence": "It is nothing serious."},
+      {"word": "aquarium", "sentence": "The aquarium is huge."}
+    ]},
+    {"id": "ʌ", "examples": [
+      {"word": "cup", "sentence": "A cup of tea, please."},
+      {"word": "sun", "sentence": "The sun is up."},
+      {"word": "bus", "sentence": "I take the bus to school."},
+      {"word": "love", "sentence": "I love my mother."}
+    ]},
+    {"id": "ə", "examples": [
+      {"word": "sofa", "sentence": "The cat sleeps on the sofa."},
+      {"word": "banana", "sentence": "Monkeys love bananas."},
+      {"word": "camera", "sentence": "My camera works again."},
+      {"word": "about", "sentence": "Tell me about the panda."}
+    ]},
+    {"id": "ɝ", "examples": [
+      {"word": "bird", "sentence": "The bird can sing."},
+      {"word": "girl", "sentence": "The girl has curly hair."},
+      {"word": "nurse", "sentence": "The nurse works early."},
+      {"word": "her", "sentence": "Give her the purple purse."}
+    ]},
+    {"id": "ɚ", "examples": [
+      {"word": "water", "sentence": "Drink more water."},
+      {"word": "teacher", "sentence": "My teacher is kind."},
+      {"word": "dinner", "sentence": "Dinner is ready."},
+      {"word": "doctor", "sentence": "The doctor is careful."}
+    ]},
+    {"id": "ɑ", "examples": [
+      {"word": "hot", "sentence": "The pot is hot."},
+      {"word": "stop", "sentence": "Stop at the shop."},
+      {"word": "box", "sentence": "The fox hides in the box."},
+      {"word": "watch", "sentence": "I watch a movie with mom."}
+    ]},
+    {"id": "ɑr", "examples": [
+      {"word": "car", "sentence": "The car is far away."},
+      {"word": "star", "sentence": "The star is bright."},
+      {"word": "park", "sentence": "We walk in the park."},
+      {"word": "garden", "sentence": "Flowers grow in the garden."}
+    ]},
+    {"id": "ɔ", "examples": [
+      {"word": "ball", "sentence": "The ball is small."},
+      {"word": "straw", "sentence": "I drink with a straw."},
+      {"word": "saw", "sentence": "I saw a hawk."},
+      {"word": "yawn", "sentence": "The baby yawns."}
+    ]},
+    {"id": "ɔr", "examples": [
+      {"word": "door", "sentence": "Open the door, please."},
+      {"word": "fork", "sentence": "I need a fork for the pork."},
+      {"word": "north", "sentence": "The north wind is cold."},
+      {"word": "sport", "sentence": "We play sports at four."}
+    ]},
+    {"id": "ɔɪ", "examples": [
+      {"word": "boy", "sentence": "The boy has a toy."},
+      {"word": "coin", "sentence": "I found a gold coin."},
+      {"word": "noise", "sentence": "Don't make a noise."},
+      {"word": "joy", "sentence": "Jump for joy."}
+    ]},
+    {"id": "o", "examples": [
+      {"word": "boat", "sentence": "The boat floats."},
+      {"word": "home", "sentence": "Go home by bus."},
+      {"word": "nose", "sentence": "The clown has a red nose."},
+      {"word": "snow", "sentence": "The snow is cold."}
+    ]},
+    {"id": "u", "examples": [
+      {"word": "zoo", "sentence": "Two kangaroos are at the zoo."},
+      {"word": "food", "sentence": "The food is cool."},
+      {"word": "moon", "sentence": "The moon is round."},
+      {"word": "school", "sentence": "See you after school."}
+    ]},
+    {"id": "ʊ", "examples": [
+      {"word": "book", "sentence": "Look at the good book."},
+      {"word": "foot", "sentence": "My left foot hurts."},
+      {"word": "put", "sentence": "Put the sugar here."},
+      {"word": "cook", "sentence": "The cook looks happy."}
+    ]},
+    {"id": "ʊr", "examples": [
+      {"word": "tour", "sentence": "The museum tour is fun."},
+      {"word": "sure", "sentence": "Are you sure?"},
+      {"word": "poor", "sentence": "The poor tourist rests."},
+      {"word": "cure", "sentence": "The doctor can cure it."}
+    ]},
+    {"id": "aʊ", "examples": [
+      {"word": "cow", "sentence": "The brown cow is loud."},
+      {"word": "house", "sentence": "The mouse runs in the house."},
+      {"word": "mouth", "sentence": "Open your mouth."},
+      {"word": "cloud", "sentence": "Look at the cloud."}
+    ]},
+    {"id": "p", "examples": [
+      {"word": "pig", "sentence": "The pink pig is big."},
+      {"word": "map", "sentence": "This map helps a lot."},
+      {"word": "paper", "sentence": "Write it on paper."},
+      {"word": "panda", "sentence": "The panda takes a nap."}
+    ]},
+    {"id": "b", "examples": [
+      {"word": "bus", "sentence": "The blue bus is late."},
+      {"word": "cab", "sentence": "Take a cab back home."},
+      {"word": "bubble", "sentence": "The baby blows bubbles."},
+      {"word": "big", "sentence": "A big brown bear."}
+    ]},
+    {"id": "m", "examples": [
+      {"word": "milk", "sentence": "Milk makes me strong."},
+      {"word": "monkey", "sentence": "The monkey eats a melon."},
+      {"word": "comb", "sentence": "Comb your hair at home."},
+      {"word": "thumb", "sentence": "My thumb is numb."}
+    ]},
+    {"id": "w", "examples": [
+      {"word": "window", "sentence": "Open the window."},
+      {"word": "wave", "sentence": "Wave to the woman."},
+      {"word": "wind", "sentence": "The wind is warm."},
+      {"word": "water", "sentence": "Wash it with water."}
+    ]},
+    {"id": "f", "examples": [
+      {"word": "fish", "sentence": "Four fish swim fast."},
+      {"word": "five", "sentence": "Five flowers bloom."},
+      {"word": "coffee", "sentence": "Coffee for the office."},
+      {"word": "leaf", "sentence": "A green leaf falls off the tree."}
+    ]},
+    {"id": "v", "examples": [
+      {"word": "van", "sentence": "The van is very old."},
+      {"word": "visit", "sentence": "Come and visit the village."},
+      {"word": "view", "sentence": "What a beautiful view!"},
+      {"word": "give", "sentence": "Give me the violin."}
+    ]},
+    {"id": "θ", "examples": [
+      {"word": "three", "sentence": "Three teeth are missing."},
+      {"word": "think", "sentence": "I think it is the third month."},
+      {"word": "teeth", "sentence": "Brush your teeth."},
+      {"word": "birthday", "sentence": "Happy birthday to both of you."}
+    ]},
+    {"id": "ð", "examples": [
+      {"word": "this", "sentence": "This is my brother."},
+      {"word": "that", "sentence": "That feather is soft."},
+      {"word": "weather", "sentence": "The weather is fine."},
+      {"word": "together", "sentence": "We sing together."}
+    ]},
+    {"id": "t", "examples": [
+      {"word": "two", "sentence": "Two turtles walk."},
+      {"word": "table", "sentence": "The cat sits under the table."},
+      {"word": "tiger", "sentence": "The tiger takes a nap."},
+      {"word": "toe", "sentence": "My toe hurts a little."}
+    ]},
+    {"id": "d", "examples": [
+      {"word": "duck", "sentence": "The duck swims away."},
+      {"word": "dad", "sentence": "Dad had a cold drink."},
+      {"word": "diamond", "sentence": "She drew a diamond."},
+      {"word": "day", "sentence": "What day is it today?"}
+    ]},
+    {"id": "s", "examples": [
+      {"word": "six", "sentence": "Six socks are on the line."},
+      {"word": "seven", "sentence": "Seven swans swim."},
+      {"word": "sing", "sentence": "Sing a song with me."},
+      {"word": "soup", "sentence": "The soup is super hot."}
+    ]},
+    {"id": "z", "examples": [
+      {"word": "zoo", "sentence": "The zebra is at the zoo."},
+      {"word": "zero", "sentence": "Zero zips."},
+      {"word": "rose", "sentence": "The rose is for Liz."},
+      {"word": "zebra", "sentence": "The zebra has no stripes."}
+    ]},
+    {"id": "n", "examples": [
+      {"word": "nine", "sentence": "Nine new nails."},
+      {"word": "nest", "sentence": "A bird builds a nest."},
+      {"word": "name", "sentence": "My name is Nina."},
+      {"word": "nose", "sentence": "The nose knows."}
+    ]},
+    {"id": "l", "examples": [
+      {"word": "lion", "sentence": "The lion lies on the grass."},
+      {"word": "leg", "sentence": "My left leg is long."},
+      {"word": "lollipop", "sentence": "A yellow lollipop."},
+      {"word": "lake", "sentence": "The lake looks lovely."}
+    ]},
+    {"id": "ʃ", "examples": [
+      {"word": "sheep", "sentence": "Two white sheep."},
+      {"word": "shoe", "sentence": "Wash this shoe."},
+      {"word": "wish", "sentence": "I wish for sunshine."},
+      {"word": "mushroom", "sentence": "Mushrooms in the dish."}
+    ]},
+    {"id": "ʒ", "examples": [
+      {"word": "television", "sentence": "Watch less television."},
+      {"word": "treasure", "sentence": "The treasure chest."},
+      {"word": "usual", "sentence": "As usual, it rains."},
+      {"word": "measure", "sentence": "Measure the garage."}
+    ]},
+    {"id": "tʃ", "examples": [
+      {"word": "chair", "sentence": "Sit on the wooden chair."},
+      {"word": "cheese", "sentence": "The mouse likes cheese."},
+      {"word": "cherry", "sentence": "Sweet cherries."},
+      {"word": "lunch", "sentence": "A cheese sandwich for lunch."}
+    ]},
+    {"id": "dʒ", "examples": [
+      {"word": "juice", "sentence": "A glass of orange juice."},
+      {"word": "jam", "sentence": "Jam on my bread."},
+      {"word": "bridge", "sentence": "A bridge over the river."},
+      {"word": "jump", "sentence": "Jump for joy."}
+    ]},
+    {"id": "r", "examples": [
+      {"word": "red", "sentence": "A red rose."},
+      {"word": "rain", "sentence": "The rain runs down the road."},
+      {"word": "rabbit", "sentence": "A rabbit runs on the road."},
+      {"word": "rope", "sentence": "Hold the rope tight."}
+    ]},
+    {"id": "j", "examples": [
+      {"word": "yes", "sentence": "Yes, it is yellow."},
+      {"word": "yard", "sentence": "The yard is yours."},
+      {"word": "you", "sentence": "See you soon."},
+      {"word": "yellow", "sentence": "The yellow yarn."}
+    ]},
+    {"id": "k", "examples": [
+      {"word": "key", "sentence": "The key is on the desk."},
+      {"word": "kite", "sentence": "Fly a kite high."},
+      {"word": "castle", "sentence": "A castle by the sea."},
+      {"word": "country", "sentence": "The countryside is quiet."}
+    ]},
+    {"id": "g", "examples": [
+      {"word": "girl", "sentence": "The girl plays a game."},
+      {"word": "goat", "sentence": "The goat eats grass."},
+      {"word": "gold", "sentence": "A gold coin."},
+      {"word": "game", "sentence": "It is a good game."}
+    ]},
+    {"id": "ŋ", "examples": [
+      {"word": "ring", "sentence": "The king wears a gold ring."},
+      {"word": "king", "sentence": "The king can sing."},
+      {"word": "long", "sentence": "A long spring."},
+      {"word": "singing", "sentence": "Singing along."}
+    ]},
+    {"id": "h", "examples": [
+      {"word": "hat", "sentence": "A hat for the horse."},
+      {"word": "horse", "sentence": "The horse is huge."},
+      {"word": "hungry", "sentence": "I am hungry."},
+      {"word": "hair", "sentence": "Her hair is brown."}
+    ]}
+  ]
+}
