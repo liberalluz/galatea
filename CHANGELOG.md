@@ -2,6 +2,33 @@
 
 <!-- Released versions, newest first. The release tool owns this file. -->
 
+## v0.2.0 - 2026-11-21
+
+### Added
+- New requirements `REQ-031`–`REQ-035` (two-tab navigation, the Me-tab four pages, the first-run hint, the shared quiz page, the handwriting overlay) with matching test cases `TC-NAV-001`, `TC-ME-001`, `TC-ME-002`, `TC-QUIZ-008` and `TC-TRACE-003`; the iOS confirmation (`REQ-025`) moves to a v0.2.x patch per the product ruling.
+- The bottom bar shows exactly two tabs — 音标 / 我 (`REQ-031`); the practice tab is removed and quiz, review, settings and about become drill-downs (the practice entry returns with B27 as the chart's row-select flow).
+- REQ-015 amended to the single-row ruling (2026-11-21): the chart's right-bottom floating button enters an in-page row-select state where exactly one row is selected at a time — default first row, tapping another row moves the selection — and confirm practices that row; the standalone range screen is abolished (Changed for the REQ-015 / TC-QUIZ-001 wording across the controlled set).
+- The shared quiz page (`REQ-034`): one page hosts the quiz session for both the new-practice source (the selected row) and the review source (the due queue); only the item source differs.
+- The handwriting overlay (`REQ-035`): the top-right pen control opens a free-tracing board covering the detail page — grey model, cross guides, clear-and-rewrite, done returns — with no route change and never a score or verdict.
+- The Me tab grows into its four pages (REQ-032): the home is rebuilt as the mastery statistics card plus the review status strip (due count, hidden when none is due) and three drill-down entries to review, settings and about.
+- The review drill-down (REQ-034) lists the due queue in due order with the fixed review-empty state and starts the shared quiz page over the review source; the chart status strip deep-links straight into it.
+- Settings (SDD §3.8): the language switch applies zh-CN/en-US to all copy immediately through the new app-wide copy table, and the audio toggle keeps the pronunciation button and listening tasks visible with playback as a fixed-notice no-op when off.
+- The About page (REQ-001) carries the version, the single source label with the ISBN slot reserved in the data structure (contingency public-tables labelling until licensed), the oss note, feedback and the device-only disclosure.
+
+### Changed
+- The controlled spec set (SRS/SDD/STD/STP) restates the v0.2.0 interaction revamp confirmed on 2026-11-21: two coarse chart groups, two-tab navigation, chart floating-button row-select practice entry, same-row detail circles, review entry in the Me tab, shared quiz page, non-scored handwriting overlay, on-device realtime audio synthesis without cache and the placeholder-delivery wording for mouth-shape and example images.
+- The chart renders only the 元音 / 辅音 coarse group headers (`REQ-002`): the fine place-of-articulation labels are data-only, and the shared row model (`row_model.dart`) splits each coarse group into rows of 5 — 24 vowels in five rows ending at 4, 24 consonants in five rows ending at 4, 48 phonemes in total.
+- The direct-read hint strip is permanently part of the chart scaffold, grey-on-grey, visible only while the toggle is on, and its tap switches to the Me tab (`REQ-005`, `REQ-022` landing).
+- The chart carries no source footer (`REQ-001`, decision 7): the book title + ISBN attribution moves to the About page with B29.
+- `REQ-020` batch label: the top-right label now shows the selected row's coarse group (元音 / 辅音) or 复习 for a review session, replacing the phoneme-count denominator text.
+- The chart gains the practice floating button, the 请选择 select bar and the green whole-row highlight; the fine group title map is gone.
+- The switcher becomes same-row member circles from the shared row model (`REQ-011`): five circles, the last row at its actual count, defaulting to the tapped phoneme; navigation never crosses rows and the ends of a row do not wrap (the chip strip and the catalog-order prev/next arrows are gone).
+- The zone order follows wireframe P3 (`SDD §3.3`): mouth-shape slot beside the single writing grid, pronunciation button below, then the 2×2 example cards; the per-zone duplicate glyph display is dropped and the star row is reduced.
+- The stroke order auto-plays once when a phoneme appears and tapping the writing grid replays it with pronunciation (decision 13); the separate play control is gone, the stroke-pending state is unchanged.
+- The v0.2.0 flows complete end-to-end on the release Web build in a browser session (`TC-PLATFORM-001`): the chart flow with the notation switch re-rendering the grid, the detail flow with the same-row circles, the wireframe zone order and the handwriting overlay, the practice flow with the single-row select and the confirm feedback, and the review chain with the due strip, the queue page and the review-source hand-off.
+- The four browser-level quality evidences were re-captured in the same session: IPA-only symbols render without tofu (`TC-QUAL-001`), a 360 px viewport keeps the 5-column grid intact with practice options above the 44 pt floor (`TC-QUAL-002`), data and texts keep working with the network disabled after first load and the audio behaviour stays a fixed non-blocking state (`TC-QUAL-003`), and semantic labels surface in the accessibility tree with Tab traversal and Enter activation operating the chart (`TC-QUAL-004`).
+- The Pages site is redeployed to the v0.2.0 build (orphan `gh-pages` branch, `--base-href /galatea/`), pending the product owner's explicit go for the external push.
+
 ## v0.1.0 - 2026-11-21
 
 ### Added

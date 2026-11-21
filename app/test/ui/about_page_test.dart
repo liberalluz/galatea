@@ -37,7 +37,7 @@ void main() {
 
       // Version line with the app metadata value.
       expect(find.byKey(const ValueKey('about-version')), findsOneWidget);
-      expect(find.textContaining('0.2.0-dev'), findsOneWidget);
+      expect(find.textContaining('0.2.0'), findsOneWidget);
 
       // The single-source label renders the data files' title plus the
       // contingency labelling (public tables until licensed); the ISBN
