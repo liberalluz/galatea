@@ -11,16 +11,24 @@ import '../../domain/mastery_prefs_store.dart';
 import '../../domain/mastery_store.dart';
 import '../chart/chart_page.dart';
 import '../me/me_page.dart';
-import '../practice/practice_page.dart';
 
-/// Root shell: three fixed tabs (chart / practice / me), chart is the default
-/// (`S3`, wireframe P0). The reading-mode switch sits at the top right of the
-/// app bar on the chart tab (`REQ-005`); it is the only control of the
-/// reading state — on, taps on the chart play audio; off, they open detail.
+/// Root shell: two fixed tabs (chart / me) after the v0.2.0 interaction
+/// revamp (`REQ-031`, decision 2) — quiz, review, settings and about are
+/// drill-downs and never occupy a tab; the practice entry returns with
+/// B27 as the chart's row-select flow. Chart is the default (wireframe
+/// P0). The reading-mode switch sits at the top right of the app bar on
+/// the chart tab (`REQ-005`); it is the only control of the reading
+/// state — on, taps on the chart play audio; off, they open detail.
 ///
-/// The shell owns one [MasteryController] (`B18`, single source of truth):
-/// the practice tab records into it and the Me tab and the detail page read
-/// it, so an answer reflects in the statistics without a reload.
+/// The shell owns one [MasteryController] (`B18`, single source of
+/// truth): the practice flow records into it and the Me tab and the
+/// detail page read it, so an answer reflects in the statistics without
+/// a reload.
+///
+/// The first-run hint (`REQ-033`, skeleton S1) shows once: a light,
+/// non-blocking banner above the body that explains the two
+/// non-obvious interactions (tap = detail, toggle = direct read);
+/// dismissing it is permanent across restarts.
 class ShellPage extends StatefulWidget {
   const ShellPage({
     super.key,
@@ -30,6 +38,7 @@ class ShellPage extends StatefulWidget {
     this.glyphsFuture,
     this.audioService,
     this.masteryFuture,
+    this.prefsFuture,
   });
 
   /// Injectable for widget tests; production loads the bundled assets.
@@ -50,6 +59,11 @@ class ShellPage extends StatefulWidget {
   /// builds a controller over the preferences store (see [_loadMastery]).
   final Future<MasteryController>? masteryFuture;
 
+  /// Injectable preferences future for widget tests (the first-run hint
+  /// flag and the mastery store both read it); production uses the
+  /// platform instance.
+  final Future<SharedPreferences>? prefsFuture;
+
   @override
   State<ShellPage> createState() => _ShellPageState();
 }
@@ -57,11 +71,60 @@ class ShellPage extends StatefulWidget {
 class _ShellPageState extends State<ShellPage> {
   int _index = 0;
   bool _readingMode = false;
+  bool _showFirstRunHint = false;
+
+  /// The preferences instance resolved once: the injected future in
+  /// tests, the platform instance with the degraded-store timeout in
+  /// production. `null` while unresolved (hint hidden, mastery pending).
+  Future<SharedPreferences> get _prefs =>
+      widget.prefsFuture ?? SharedPreferences.getInstance();
+
+  /// The persisted flag key for the first-run hint (`REQ-033`): set to
+  /// true on dismissal, never shown again afterwards.
+  static const String _kFirstRunDismissed = 'first-run-hint-dismissed';
 
   late final Future<MasteryController> _mastery =
       widget.masteryFuture ?? _loadMastery();
 
-  static const List<String> _titles = ['音标', '练习', '我'];
+  static const List<String> _titles = ['音标', '我'];
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveFirstRunHint();
+  }
+
+  /// Reads the dismissal flag; the hint shows only when the flag has
+  /// never been set (`REQ-033`). A failed read hides the hint — a
+  /// missing flag never blocks the chart.
+  Future<void> _resolveFirstRunHint() async {
+    try {
+      final prefs = await _prefs.timeout(const Duration(milliseconds: 150));
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _showFirstRunHint = !(prefs.getBool(_kFirstRunDismissed) ?? false);
+      });
+    } catch (_) {
+      // No platform backend answered in time: keep the hint hidden.
+    }
+  }
+
+  /// Dismisses the first-run hint and persists the dismissal so later
+  /// launches never show it again (`REQ-033`).
+  Future<void> _dismissFirstRunHint() async {
+    setState(() {
+      _showFirstRunHint = false;
+    });
+    try {
+      final prefs = await _prefs.timeout(const Duration(milliseconds: 150));
+      await prefs.setBool(_kFirstRunDismissed, true);
+    } catch (_) {
+      // Degraded store: the dismissal stays session-local, marked by the
+      // missing persisted flag rather than presented as saved.
+    }
+  }
 
   Future<MasteryController> _loadMastery() async {
     try {
@@ -71,9 +134,10 @@ class _ShellPageState extends State<ShellPage> {
       // the mastery state stays session-local (ux-flows R23 failure
       // branch: the degraded state is marked, never presented as
       // trusted).
-      final prefs = await SharedPreferences.getInstance().timeout(
-        const Duration(milliseconds: 150),
-      );
+      final prefs =
+          await (widget.prefsFuture ?? SharedPreferences.getInstance()).timeout(
+            const Duration(milliseconds: 150),
+          );
       final controller = MasteryController(store: PrefsMasteryStore(prefs));
       await controller.load();
       return controller;
@@ -108,25 +172,52 @@ class _ShellPageState extends State<ShellPage> {
           if (mastery == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return IndexedStack(
-            index: _index,
+          return Column(
             children: [
-              ChartPage(
-                catalogFuture: widget.catalogFuture,
-                correspondenceFuture: widget.correspondenceFuture,
-                examplesFuture: widget.examplesFuture,
-                glyphsFuture: widget.glyphsFuture,
-                audioService: widget.audioService,
-                readingMode: _readingMode,
-                mastery: mastery,
-              ),
-              PracticePage(
-                catalogFuture: widget.catalogFuture,
-                masteryController: mastery,
-              ),
-              MePage(
-                catalogFuture: widget.catalogFuture,
-                masteryController: mastery,
+              if (_showFirstRunHint)
+                Material(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    child: Row(
+                      key: const ValueKey('first-run-hint'),
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '轻提示：点音标看详情；打开右上角开关可直读发音',
+                            key: const ValueKey('first-run-hint-text'),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        TextButton(
+                          key: const ValueKey('first-run-dismiss'),
+                          onPressed: _dismissFirstRunHint,
+                          child: const Text('知道了'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: IndexedStack(
+                  index: _index,
+                  children: [
+                    ChartPage(
+                      catalogFuture: widget.catalogFuture,
+                      correspondenceFuture: widget.correspondenceFuture,
+                      examplesFuture: widget.examplesFuture,
+                      glyphsFuture: widget.glyphsFuture,
+                      audioService: widget.audioService,
+                      readingMode: _readingMode,
+                      mastery: mastery,
+                      onReviewDeepLink: () => setState(() => _index = 1),
+                    ),
+                    MePage(
+                      catalogFuture: widget.catalogFuture,
+                      masteryController: mastery,
+                    ),
+                  ],
+                ),
               ),
             ],
           );
@@ -140,11 +231,6 @@ class _ShellPageState extends State<ShellPage> {
             key: ValueKey('tab-chart'),
             icon: Icon(Icons.abc),
             label: '音标',
-          ),
-          NavigationDestination(
-            key: ValueKey('tab-practice'),
-            icon: Icon(Icons.edit_note),
-            label: '练习',
           ),
           NavigationDestination(
             key: ValueKey('tab-me'),
