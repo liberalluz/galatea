@@ -1,4 +1,4 @@
-# STD — galatea v0.1.0
+# STD — galatea v0.2.0
 
 [简体中文](STD.zh-CN.md) · English
 
@@ -12,19 +12,23 @@ it is a recorded TBD row in the STP.
 - Covers: `REQ-001`
 - Preconditions: app served by the Flutter Web build; bundled phoneme data present.
 - Steps:
-  1. Open the chart page.
-  2. Count the rendered phoneme entries.
-  3. Inspect the source label on the chart page.
-- Exit: exactly 48 entries render and the source label is visible.
+  1. Open the chart page and count the rendered phoneme entries.
+  2. Inspect the chart page for a source label or footer.
+  3. Open the Me tab → About page and inspect its source entry.
+- Exit: exactly 48 entries render; the chart shows no source label; the About
+  page shows the book-title + ISBN source.
 
 ### `TC-CHART-002`
 
 - Covers: `REQ-002`
 - Preconditions: chart page open.
 - Steps:
-  1. Observe the grid layout.
-  2. Check each phoneme against its category group header.
-- Exit: 5 columns render and each of the 48 phonemes appears exactly once in its category group.
+  1. Observe the grid layout and the group headers.
+  2. Check each phoneme against its coarse group and row position.
+- Exit: 5 columns render; only the vowel / consonant coarse headers are
+  visible and no fine category label is displayed; rows follow the
+  place-of-articulation order at 5 per row with the last row at its actual
+  count, and each of the 48 phonemes appears exactly once.
 
 ### `TC-CHART-003`
 
@@ -51,6 +55,18 @@ it is a recorded TBD row in the STP.
   2. Tap a symbol.
 - Exit: audio plays, navigation does not occur, and the hint line stays visible.
 
+### `TC-NAV-001`
+
+- Covers: `REQ-031`
+- Preconditions: app served by the Flutter Web build, first launch completed.
+- Steps:
+  1. Inspect the bottom navigation bar.
+  2. Open the detail page, a quiz session, review, settings and about.
+  3. Return from each drill-down with the top back control.
+- Exit: the bottom bar shows exactly the chart tab and the Me tab; no
+  drill-down adds a tab; back returns to the previous page with its scroll
+  position.
+
 ### `TC-DETAIL-001`
 
 - Covers: `REQ-006`
@@ -63,25 +79,33 @@ it is a recorded TBD row in the STP.
 ### `TC-DETAIL-002`
 
 - Covers: `REQ-007`
-- Preconditions: detail pages reachable for all 48 phonemes.
-- Steps: open every phoneme's detail page and inspect the mouth-shape slot.
-- Exit: each page shows a mouth-shape image; a missing asset renders the fixed preparing placeholder, never a blank area.
+- Preconditions: detail pages reachable for all 48 phonemes; at least one phoneme
+  has no mouth-shape asset in the data.
+- Steps: open every phoneme's detail page and inspect the mouth-shape slot;
+  inspect the data record of the phoneme without artwork.
+- Exit: each page shows a mouth-shape slot; the phoneme without artwork renders
+  the fixed placeholder (never a blank area or another phoneme's image) and its
+  data record reserves the image path.
 
 ### `TC-DETAIL-003`
 
 - Covers: `REQ-010`
 - Preconditions: detail page open for a phoneme with complete example data.
 - Steps: inspect the 2×2 example card grid.
-- Exit: 4 cards render, each with image + word/sentence and no translation text.
+- Exit: 4 cards render, each with one image, one word and one sentence, no
+  translation text.
 
 ### `TC-DETAIL-004`
 
 - Covers: `REQ-011`
-- Preconditions: detail page open for a mid-list phoneme.
+- Preconditions: detail page reached by tapping a chart cell (not the row head).
 - Steps:
-  1. Tap next repeatedly until the last phoneme.
-  2. Tap previous repeatedly until the first phoneme.
-- Exit: each tap refreshes all sections with the adjacent phoneme; at both ends the bar does not wrap.
+  1. Compare the circle switcher with the tapped phoneme's row members.
+  2. Tap circles within the row until both ends.
+- Exit: the switcher shows the tapped phoneme's row members (5 circles, the
+  last row its actual count) and defaults to the tapped phoneme; each tap
+  refreshes all sections with a same-row member; navigation never crosses rows
+  and row ends do not wrap.
 
 ### `TC-TRACE-001`
 
@@ -97,9 +121,24 @@ it is a recorded TBD row in the STP.
 - Covers: `REQ-009`
 - Preconditions: detail pages open — one with stroke data, one without.
 - Steps:
-  1. Play the stroke-order animation on the first page.
-  2. Inspect the control on the second page.
-- Exit: the animation plays on the first; the second shows the fixed preparing state with the control disabled, independent of the tracing area.
+  1. Re-enter the first page and observe the writing grid.
+  2. Tap the writing grid after the auto-play.
+  3. Inspect the second page.
+- Exit: the stroke order auto-plays once on entry; tapping the grid replays the
+  stroke order with pronunciation; the second page shows the fixed preparing
+  state with playback disabled, independent of tracing.
+
+### `TC-TRACE-003`
+
+- Covers: `REQ-035`
+- Preconditions: detail page open; the writing task flow reachable for contrast.
+- Steps:
+  1. Tap the top-right ✎ control and observe the presentation.
+  2. Draw strokes, clear and redraw, then close via done and via close.
+- Exit: the ✎ control opens a board that covers the detail page as an overlay
+  (no route change); strokes follow the pointer, clear rewrites cleanly, both
+  exits return to the detail page; no score or verdict is ever produced — the
+  writing task (`REQ-018`) remains the only scored surface.
 
 ### `TC-CONTENT-001`
 
@@ -109,7 +148,8 @@ it is a recorded TBD row in the STP.
   1. Locate the correspondence data file and its labelled source.
   2. Change one mapping value in the data file only (no code change).
   3. Reload the app and inspect the affected phoneme.
-- Exit: the displayed mapping follows the edited data and the data file carries a labelled source.
+- Exit: the displayed mapping follows the edited data and the data file carries
+  the book-title + ISBN source, rendered on the About page.
 
 ### `TC-CONTENT-002`
 
@@ -125,15 +165,41 @@ it is a recorded TBD row in the STP.
 - Steps: open that phoneme's detail page.
 - Exit: the affected card shows the fixed image placeholder; all other cards show their images.
 
+### `TC-ME-001`
+
+- Covers: `REQ-032`
+- Preconditions: app served by the Flutter Web build.
+- Steps:
+  1. Open the Me tab and inspect the home content.
+  2. Open review, settings and about from the home entries.
+- Exit: the Me tab home shows the mastery card and the review status strip;
+  review, settings and about open as drill-downs from it; no Me sub-page is a
+  bottom tab.
+
+### `TC-ME-002`
+
+- Covers: `REQ-033`
+- Preconditions: a profile with no prior launch (first-run flag unset) and one
+  with a prior launch.
+- Steps:
+  1. Launch the app with the first-run flag unset; dismiss the hint; relaunch.
+  2. Launch the app with a prior launch recorded.
+- Exit: the first launch shows the one-time light hint without blocking the
+  chart page; after dismissal later launches show no hint.
+
 ### `TC-QUIZ-001`
 
 - Covers: `REQ-015`
-- Preconditions: practice range selection page open.
+- Preconditions: chart page open, direct-read mode off.
 - Steps:
-  1. Apply one category tag; observe the set.
-  2. Multi-select and unselect phonemes on the 5-column grid.
-  3. Deselect everything and observe confirm.
-- Exit: tags filter the set, the grid multi-selects/unselects, and confirm stays disabled with an empty selection.
+  1. Tap the right-bottom floating button and observe the page state.
+  2. Observe the default selection; toggle additional rows on and off.
+  3. Cancel and re-enter; then confirm.
+- Exit: the button enters an in-page row-select state with the `请选择` top bar
+  and the selected-row count; the first row is selected by default (whole row
+  highlighted); rows toggle at row level (multi-select, not per-phoneme);
+  cancel exits the state; confirm starts the quiz on the selected rows; no
+  standalone range screen exists in the app.
 
 ### `TC-QUIZ-002`
 
@@ -170,18 +236,34 @@ it is a recorded TBD row in the STP.
 ### `TC-QUIZ-006`
 
 - Covers: `REQ-020`
-- Preconditions: a practice session running over a known range.
-- Steps: answer items and compare the progress bar and top-right range label against the selection.
-- Exit: the bar advances per answered item and the label matches the selected range.
+- Preconditions: a practice session running over known selected rows.
+- Steps: answer items and compare the progress bar and the top-right label
+  against the selected rows.
+- Exit: the bar advances per answered item and the top-right batch label shows
+  vowel / consonant matching the selected rows' coarse group.
 
 ### `TC-QUIZ-007`
 
 - Covers: `REQ-021`
-- Preconditions: a practice session over a range of known size.
+- Preconditions: a practice session over selected rows of known size.
 - Steps:
   1. Confirm an answer and observe feedback timing.
   2. Complete the session and read the completion rate.
-- Exit: feedback appears immediately after confirm; the rate equals in-range phonemes answered ≥ 1 time ÷ in-range phonemes.
+- Exit: feedback appears immediately after confirm; the rate equals
+  selected-row phonemes answered ≥ 1 time ÷ selected-row phonemes.
+
+### `TC-QUIZ-008`
+
+- Covers: `REQ-034`
+- Preconditions: at least one phoneme in the review queue and the chart page
+  reachable.
+- Steps:
+  1. Start a new practice session from the chart's row-select confirm.
+  2. Return and start a review session from the Me tab review entry.
+  3. Compare the two session pages.
+- Exit: both sessions render the same quiz page (same progress bar and
+  top-right label placement, same task shapes); only the item source differs —
+  new practice draws from the selected rows, review draws from the due queue.
 
 ### `TC-REVIEW-001`
 
@@ -189,9 +271,13 @@ it is a recorded TBD row in the STP.
 - Preconditions: app state resettable; PRD review intervals (1/2/4/7/15 days) as reference.
 - Steps:
   1. Answer a phoneme wrong; check star and queue.
-  2. Answer correctly on consecutive review days per the intervals.
-  3. Answer wrong during a review; observe the interval.
-- Exit: star −1 and queue entry on wrong; interval advances 1/2/4/7/15 days on consecutive correct answers and resets on a wrong one.
+  2. Open the Me tab, locate the review entry under the mastery card and open
+     the review session; also verify the review status strip deep-links there.
+  3. Answer correctly on consecutive review days per the intervals.
+  4. Answer wrong during a review; observe the interval.
+- Exit: star −1 and queue entry on wrong; the entry is reachable from the Me
+  tab mastery card and the status strip deep-links to it; interval advances
+  1/2/4/7/15 days on consecutive correct answers and resets on a wrong one.
 
 ### `TC-REVIEW-002`
 
@@ -208,6 +294,12 @@ it is a recorded TBD row in the STP.
 - Preconditions: release-mode Flutter Web build served locally.
 - Steps: run the chart, detail, practice and review flows of this plan in a browser.
 - Exit: all flows complete end-to-end on the Web build without errors.
+
+### `TBD`
+
+- Covers: `REQ-025`
+- iOS functional confirmation is verified with the v0.2.x patch; recorded gap
+  for this slice.
 
 ### `TC-DOC-001`
 
@@ -237,9 +329,14 @@ it is a recorded TBD row in the STP.
 ### `TC-QUAL-003`
 
 - Covers: `REQ-029`
-- Preconditions: audio for at least one phoneme generated once (cache warm).
-- Steps: disable the network; open chart, correspondence data, word/sentence texts; play the cached audio.
-- Exit: data and texts work offline and the cached audio plays.
+- Preconditions: network available for the initial synthesis, then disabled.
+- Steps:
+  1. Verify no audio cache files exist on disk after playback.
+  2. Disable the network; open chart, correspondence data and word/sentence
+     texts; trigger audio playback.
+- Exit: data and texts work offline; audio is synthesized on device and plays
+  with no cache files on disk; a synthesis failure shows the fixed state
+  without blocking practice.
 
 ### `TC-QUAL-004`
 
