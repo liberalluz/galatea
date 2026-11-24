@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../content/phoneme_catalog.dart';
 import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
+import '../../domain/notation.dart';
 import 'about_page.dart';
 import 'review_page.dart';
 import 'settings_page.dart';
@@ -42,12 +43,6 @@ class _MePageState extends State<MePage> {
   /// display filter — the counts and stars are identical under all
   /// three (TC-REVIEW-002 exit).
   String _notation = 'kk';
-
-  static const Map<String, String> _notationLabels = <String, String>{
-    'kk': 'KK',
-    'dj': 'DJ',
-    'ipa': 'IPA',
-  };
 
   /// The due-today count from the engine; `null` while the catalog has
   /// not resolved (the strip stays hidden until it can be computed).
@@ -184,12 +179,13 @@ class _MePageState extends State<MePage> {
             Wrap(
               spacing: 8,
               children: [
-                for (final entry in _notationLabels.entries)
+                for (final notation in Notation.values)
                   ChoiceChip(
-                    key: ValueKey('me-filter-${entry.key}'),
-                    label: Text(entry.value),
-                    selected: _notation == entry.key,
-                    onSelected: (_) => setState(() => _notation = entry.key),
+                    key: ValueKey('me-filter-${notation.name}'),
+                    label: Text(notationLabels[notation]!),
+                    selected: _notation == notation.name,
+                    onSelected: (_) =>
+                        setState(() => _notation = notation.name),
                   ),
               ],
             ),
