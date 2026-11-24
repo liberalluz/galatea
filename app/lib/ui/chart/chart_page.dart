@@ -9,6 +9,7 @@ import '../../content/phoneme_catalog.dart';
 import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/notation.dart';
+import '../../domain/notation_controller.dart';
 import '../detail/detail_page.dart';
 import '../practice/quiz_page.dart';
 import 'row_model.dart';
@@ -58,6 +59,7 @@ class ChartPage extends StatefulWidget {
     this.audioService,
     this.readingMode = false,
     this.mastery,
+    this.notation,
     this.onReviewDeepLink,
   });
 
@@ -84,9 +86,15 @@ class ChartPage extends StatefulWidget {
   /// itself lands in B29. `null` leaves the strip inert (unit harnesses).
   final VoidCallback? onReviewDeepLink;
 
-  /// The shell-owned mastery controller (`B18`); handed to the detail
-  /// page for the star rating row. `null` keeps the row absent.
+  /// The shell-owned mastery controller (`B18`); handed to the quiz page
+  /// for the answer feedback. `null` keeps the stars at their defaults.
   final MasteryController? mastery;
+
+  /// The shell-owned notation selection (`REQ-036`): the chart page's
+  /// KK / DJ / IPA switch writes here and the detail page reads it, so the
+  /// detail page shows the notation the user picked here. `null` falls
+  /// back to the page-local KK default (unit harnesses).
+  final NotationController? notation;
 
   @override
   State<ChartPage> createState() => _ChartPageState();
@@ -107,6 +115,14 @@ class _ChartPageState extends State<ChartPage> {
   Notation _notation = Notation.kk;
   String? _selectedId;
   PhonemeCatalogEntry? _lastPlayed;
+
+  /// The shell-owned notation controller (`REQ-036`); the page-local
+  /// [_notation] is the fallback when the controller is absent.
+  NotationController? get _notationController => widget.notation;
+
+  /// The notation currently in effect: the shared controller's selection
+  /// when the shell provides one, the page-local KK default otherwise.
+  Notation get _activeNotation => _notationController?.notation ?? _notation;
 
   /// Whether the row-select state (`REQ-015`) is active: the top bar
   /// shows the 请选择 bar, rows select at row level and the floating
@@ -184,7 +200,7 @@ class _ChartPageState extends State<ChartPage> {
               kk: m.kk,
               dj: m.dj,
               ipa: m.ipa,
-              notation: _notation,
+              notation: _activeNotation,
             ),
         };
         // The select-state row bookkeeping (`REQ-015`): the rows of both
@@ -255,11 +271,16 @@ class _ChartPageState extends State<ChartPage> {
                         label: Text(_kNotationLabels[n]!),
                       ),
                   ],
-                  selected: {_notation.name},
+                  selected: {_activeNotation.name},
                   onSelectionChanged: (selection) {
+                    final next = Notation.values.byName(selection.first);
                     setState(() {
-                      _notation = Notation.values.byName(selection.first);
+                      _notation = next;
                     });
+                    // The shared controller keeps the detail page on the
+                    // same notation (`REQ-036`); the page-local state keeps
+                    // the chart itself in sync when the shell provides none.
+                    _notationController?.select(next);
                   },
                 ),
               ),
@@ -280,6 +301,7 @@ class _ChartPageState extends State<ChartPage> {
                         examples,
                         glyphData,
                         rowIndexOf,
+                        correspondence,
                       ),
                       ..._coarseGroupWidgets(
                         context,
@@ -289,6 +311,7 @@ class _ChartPageState extends State<ChartPage> {
                         examples,
                         glyphData,
                         rowIndexOf,
+                        correspondence,
                       ),
                     ],
                   ),
@@ -404,6 +427,7 @@ class _ChartPageState extends State<ChartPage> {
     ExamplesData? examples,
     GlyphData? glyphData,
     Map<String, int> rowIndexOf,
+    CorrespondenceTable? correspondence,
   ) {
     final rows = rowsForKind(kind, catalog.entries);
     final copy = CopyScope.of(context);
@@ -427,6 +451,7 @@ class _ChartPageState extends State<ChartPage> {
         examples,
         glyphData,
         rowIndexOf,
+        correspondence,
       ),
     ];
   }
@@ -440,6 +465,7 @@ class _ChartPageState extends State<ChartPage> {
     ExamplesData? examples,
     GlyphData? glyphData,
     Map<String, int> rowIndexOf,
+    CorrespondenceTable? correspondence,
   ) {
     final tableRows = <TableRow>[
       for (final row in rows)
@@ -454,6 +480,7 @@ class _ChartPageState extends State<ChartPage> {
                 examples,
                 glyphData,
                 rowIndexOf[entry.id]!,
+                correspondence,
               ),
             // Pad the last row so it stays left-aligned inside the grid;
             // the row itself holds only its actual phoneme count.
@@ -509,6 +536,7 @@ class _ChartPageState extends State<ChartPage> {
     ExamplesData? examples,
     GlyphData? glyphData,
     int rowIndex,
+    CorrespondenceTable? correspondence,
   ) {
     final selected = _selectedId == entry.id;
     // The row-select highlight (`REQ-015`): in the select state the whole
@@ -543,7 +571,8 @@ class _ChartPageState extends State<ChartPage> {
                 audioService: widget.audioService,
                 examples: examples,
                 glyphs: glyphData,
-                mastery: widget.mastery,
+                notation: _notationController,
+                correspondence: correspondence,
               ),
             ),
           );

@@ -112,53 +112,62 @@ void main() {
   );
 
   testWidgets(
-    'the zones follow the wireframe order: mouth beside writing, then pronunciation, then example cards',
+    'the flat content flow keeps the fixed order: mapping row, writing card, pronunciation, examples',
     (tester) async {
       await pumpDetail(tester, initialId: 'c');
 
-      final zoneKeys = [
-        'zone-mouth',
-        'zone-writing',
-        'zone-audio',
-        'zone-words',
-      ];
-      final foundKeys = find
-          .byType(Card)
-          .evaluate()
-          .map((element) => element.widget.key)
-          .whereType<ValueKey<String>>()
-          .map((key) => key.value)
-          .toList();
-
-      expect(foundKeys, zoneKeys, reason: 'zones appear in the fixed order');
+      double topOf(String key) =>
+          tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+      expect(
+        topOf('detail-mapping-row'),
+        lessThan(topOf('detail-writing-card')),
+        reason: 'the mapping row sits above the writing card',
+      );
+      expect(
+        topOf('detail-writing-card'),
+        lessThan(topOf('detail-audio-line')),
+        reason: 'the pronunciation line sits right under the writing card',
+      );
+      expect(
+        topOf('detail-audio-line'),
+        lessThan(topOf('example-grid')),
+        reason: 'the example grid closes the flow',
+      );
       expect(
         find.byKey(const ValueKey('switcher-prev')),
         findsNothing,
         reason: 'the catalog-order arrows are gone',
       );
       expect(find.byKey(const ValueKey('switcher-next')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('detail-hero-glyph')),
-        findsOneWidget,
-        reason: 'the large glyph stays above the zones',
-      );
     },
   );
 
-  testWidgets('the zone cards no longer duplicate the large glyph display', (
+  testWidgets('the flat flow drops the zone cards and the large glyph', (
     tester,
   ) async {
     await pumpDetail(tester, initialId: 'c');
 
-    for (final zone in ['zone-mouth', 'zone-writing', 'zone-audio']) {
+    expect(
+      find.byKey(const ValueKey('detail-hero-glyph')),
+      findsNothing,
+      reason: 'the large glyph is replaced by the mapping row',
+    );
+    for (final zone in [
+      'zone-mouth',
+      'zone-writing',
+      'zone-audio',
+      'zone-words',
+    ]) {
       expect(
-        find.descendant(
-          of: find.byKey(ValueKey(zone)),
-          matching: find.text('c'),
-        ),
+        find.byKey(ValueKey(zone)),
         findsNothing,
-        reason: '$zone drops the duplicated glyph',
+        reason: '$zone loses its card shell',
       );
     }
+    expect(
+      find.byType(Card),
+      findsNothing,
+      reason: 'the flat content flow carries no card frames',
+    );
   });
 }

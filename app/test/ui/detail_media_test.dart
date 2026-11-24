@@ -23,7 +23,7 @@ PhonemeCatalog fakeCatalog() => PhonemeCatalog(
   ],
 );
 
-ExamplesData fakeExamples() {
+ExamplesData fakeExamples({String displayForm = 'word'}) {
   ExampleItem item(String word) =>
       ExampleItem(word: word, sentence: 'A $word sentence.', image: '');
   return ExamplesData(
@@ -34,6 +34,7 @@ ExamplesData fakeExamples() {
         glyph: PhonemeExamples(
           id: glyph,
           mouth: '',
+          displayForm: displayForm,
           examples: [
             item('${glyph}1'),
             item('${glyph}2'),
@@ -49,6 +50,7 @@ void main() {
   Future<void> pumpDetail(
     WidgetTester tester, {
     required String initialId,
+    String displayForm = 'word',
   }) async {
     // Tall viewport so the lazy ListView builds every zone section.
     tester.view.physicalSize = const Size(1080, 12000);
@@ -60,7 +62,7 @@ void main() {
         home: DetailPage(
           catalog: fakeCatalog(),
           initialId: initialId,
-          examples: fakeExamples(),
+          examples: fakeExamples(displayForm: displayForm),
         ),
       ),
     );
@@ -90,7 +92,7 @@ void main() {
   );
 
   testWidgets(
-    'the detail page shows exactly 4 example cards with word and sentence and no translation',
+    'the detail page shows exactly 4 example cards with the word only, never the sentence',
     (tester) async {
       await pumpDetail(tester, initialId: 'a');
 
@@ -100,7 +102,27 @@ void main() {
       }
       for (var i = 1; i <= 4; i++) {
         expect(find.text('a$i'), findsOneWidget);
+        expect(
+          find.text('A a$i sentence.'),
+          findsNothing,
+          reason: 'the word form never shows the sentence as well (REQ-010)',
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'a phoneme in the sentence form shows the sentence only, never the word',
+    (tester) async {
+      await pumpDetail(tester, initialId: 'a', displayForm: 'sentence');
+
+      for (var i = 1; i <= 4; i++) {
         expect(find.text('A a$i sentence.'), findsOneWidget);
+        expect(
+          find.text('a$i'),
+          findsNothing,
+          reason: 'the sentence form never shows the word as well (REQ-010)',
+        );
       }
     },
   );

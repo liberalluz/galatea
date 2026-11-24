@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
 
+/// The centred square the normalized 0–1 model space maps into
+/// (`REQ-008`, `REQ-009`, B32 mapping ruling): the letterform keeps its
+/// proportions inside a wide card instead of stretching horizontally, and
+/// the margins stay blank.
+Rect _modelRect(Size size) {
+  final side = size.shortestSide;
+  return Rect.fromLTWH(
+    (size.width - side) / 2,
+    (size.height - side) / 2,
+    side,
+    side,
+  );
+}
+
 /// Paints the handwritten model faintly, the pointer strokes in ink and,
 /// while the stroke-order animation plays, the model strokes progressively
 /// up to the playback progress (`REQ-009`, ADR-0003). All strokes are in
-/// the normalized 0–1 square; the painter scales them to the canvas size.
+/// the normalized 0–1 square; the painter maps them into the centred
+/// square of the canvas, so the model keeps its proportions.
 class HandwritingPainter extends CustomPainter {
   HandwritingPainter({
     required this.model,
@@ -39,8 +54,10 @@ class HandwritingPainter extends CustomPainter {
     Path polyline(List<Offset> stroke, [double until = 1]) {
       final path = Path();
       var total = 0.0;
+      final rect = _modelRect(size);
       final scaled = [
-        for (final p in stroke) Offset(p.dx * size.width, p.dy * size.height),
+        for (final p in stroke)
+          Offset(rect.left + p.dx * rect.width, rect.top + p.dy * rect.height),
       ];
       for (var i = 1; i < scaled.length; i++) {
         total += (scaled[i] - scaled[i - 1]).distance;
@@ -186,10 +203,16 @@ class TracingCanvasState extends State<TracingCanvas> {
 
   Offset _normalized(Offset localPosition) {
     final box = context.findRenderObject()! as RenderBox;
-    final size = box.size;
+    // The pointer positions are normalized against the same centred square
+    // the model is painted into, so the captured strokes land on the model
+    // instead of drifting when the area is wider than it is tall.
+    final rect = _modelRect(box.size);
+    if (rect.width <= 0 || rect.height <= 0) {
+      return Offset.zero;
+    }
     return Offset(
-      (localPosition.dx / size.width).clamp(0.0, 1.0),
-      (localPosition.dy / size.height).clamp(0.0, 1.0),
+      ((localPosition.dx - rect.left) / rect.width).clamp(0.0, 1.0),
+      ((localPosition.dy - rect.top) / rect.height).clamp(0.0, 1.0),
     );
   }
 

@@ -117,7 +117,7 @@ void main() {
       await tester.pump();
 
       final node = tester.getSemantics(
-        find.byKey(const ValueKey('detail-hero-glyph')),
+        find.byKey(const ValueKey('detail-topbar-symbol')),
       );
       expect(
         node.label,
@@ -127,7 +127,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('the detail hero glyph reads the spoken text', (tester) async {
+    testWidgets('the detail top-bar symbol reads the spoken text', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       final catalog = _catalog();
       await tester.pumpWidget(
@@ -138,12 +140,12 @@ void main() {
       await tester.pump();
 
       final node = tester.getSemantics(
-        find.byKey(const ValueKey('detail-hero-glyph')),
+        find.byKey(const ValueKey('detail-topbar-symbol')),
       );
       expect(
         node.label,
         'sound-alpha',
-        reason: 'the detail hero glyph reads the spoken text',
+        reason: 'the detail top-bar symbol reads the spoken text',
       );
       handle.dispose();
     });

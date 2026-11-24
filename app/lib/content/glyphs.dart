@@ -11,10 +11,22 @@ import 'package:flutter/services.dart' show rootBundle;
 /// stroke by the stroke-order control. Phonemes missing an entry show
 /// the fixed preparing state (`TC-TRACE-002`).
 class PhonemeGlyph {
-  const PhonemeGlyph({required this.strokes});
+  const PhonemeGlyph({required this.strokes, this.variants = const {}});
 
   /// Ordered strokes; together they compose the handwritten glyph.
   final List<List<Offset>> strokes;
+
+  /// The notation-aware skeletons (`REQ-013`, B32): the strokes of the
+  /// notations whose letterform differs from the base one — the long
+  /// vowels take the extra length stroke, the phonemes whose printed
+  /// letterform itself differs carry the other skeleton. A notation
+  /// without an entry reuses [strokes].
+  final Map<String, List<List<Offset>>> variants;
+
+  /// The strokes of [notation]: its own skeleton when the record carries
+  /// one, the shared base strokes otherwise.
+  List<List<Offset>> strokesFor(String notation) =>
+      variants[notation] ?? strokes;
 }
 
 class GlyphData {
@@ -51,7 +63,20 @@ Future<GlyphData> loadGlyphs() async {
       for (final stroke in (map['strokes'] as List<dynamic>))
         [for (final p in (stroke as List<dynamic>)) point(p)],
     ];
-    entries[id] = PhonemeGlyph(strokes: strokes);
+    // The notation-aware skeletons (`REQ-013`): the per-notation stroke
+    // lists sit next to the base strokes; a notation without an entry
+    // keeps the base strokes.
+    final rawVariants = map['variants'] as Map<String, dynamic>?;
+    final variants = <String, List<List<Offset>>>{};
+    if (rawVariants != null) {
+      for (final variant in rawVariants.entries) {
+        variants[variant.key] = [
+          for (final stroke in (variant.value as List<dynamic>))
+            [for (final p in (stroke as List<dynamic>)) point(p)],
+        ];
+      }
+    }
+    entries[id] = PhonemeGlyph(strokes: strokes, variants: variants);
   }
 
   return GlyphData(

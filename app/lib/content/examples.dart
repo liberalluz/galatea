@@ -26,6 +26,7 @@ class PhonemeExamples {
     required this.id,
     required this.examples,
     this.mouth = '',
+    this.displayForm = 'word',
   });
 
   final String id;
@@ -33,6 +34,16 @@ class PhonemeExamples {
 
   /// Optional mouth-shape asset path; empty while the artwork is missing.
   final String mouth;
+
+  /// Which text the detail page's example cards show for this phoneme
+  /// (`REQ-010`): either the word or the sentence, never both. The marker
+  /// sits on the phoneme, so the phoneme's four cards share one form. The
+  /// bundled data marks every phoneme as a word, which matches the
+  /// competitor's example cards.
+  final String displayForm;
+
+  /// Whether this phoneme's cards show the sentence rather than the word.
+  bool get showsSentence => displayForm == 'sentence';
 }
 
 class ExamplesData {
@@ -72,6 +83,7 @@ Future<ExamplesData> loadExamples() async {
       id: id,
       examples: examples,
       mouth: map['mouth'] as String? ?? '',
+      displayForm: map['displayForm'] as String? ?? 'word',
     );
   }
 
