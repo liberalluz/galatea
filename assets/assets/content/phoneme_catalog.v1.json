@@ -11,336 +11,384 @@
       "kind": "vowel",
       "group": "front",
       "kk": "i",
-      "tts": "ee"
+      "tts": "ee",
+      "letters": "ee"
     },
     {
       "id": "ɪ",
       "kind": "vowel",
       "group": "front",
       "kk": "ɪ",
-      "tts": "ih"
+      "tts": "ih",
+      "letters": "i"
     },
     {
       "id": "e",
       "kind": "vowel",
       "group": "front",
       "kk": "e",
-      "tts": "eh"
+      "tts": "eh",
+      "letters": "igh"
     },
     {
       "id": "ɛ",
       "kind": "vowel",
       "group": "front",
       "kk": "ɛ",
-      "tts": "met"
+      "tts": "met",
+      "letters": "e"
     },
     {
       "id": "æ",
       "kind": "vowel",
       "group": "front",
       "kk": "æ",
-      "tts": "at"
+      "tts": "at",
+      "letters": "a"
     },
     {
       "id": "aɪ",
       "kind": "vowel",
       "group": "front",
       "kk": "aɪ",
-      "tts": "eye"
+      "tts": "eye",
+      "letters": "i"
     },
     {
       "id": "ɪr",
       "kind": "vowel",
       "group": "front",
       "kk": "ɪr",
-      "tts": "ear"
+      "tts": "ear",
+      "letters": "ear"
     },
     {
       "id": "ɛr",
       "kind": "vowel",
       "group": "front",
       "kk": "ɛr",
-      "tts": "air"
+      "tts": "air",
+      "letters": "air"
     },
     {
       "id": "ɪə",
       "kind": "vowel",
       "group": "front",
       "kk": "ɪə",
-      "tts": "idea"
+      "tts": "idea",
+      "letters": "ea"
     },
     {
       "id": "iə",
       "kind": "vowel",
       "group": "front",
       "kk": "iə",
-      "tts": "here"
+      "tts": "here",
+      "letters": "io"
     },
     {
       "id": "ʌ",
       "kind": "vowel",
       "group": "central",
       "kk": "ʌ",
-      "tts": "up"
+      "tts": "up",
+      "letters": "u"
     },
     {
       "id": "ə",
       "kind": "vowel",
       "group": "central",
       "kk": "ə",
-      "tts": "uh"
+      "tts": "uh",
+      "letters": "a"
     },
     {
       "id": "ɝ",
       "kind": "vowel",
       "group": "central",
       "kk": "ɝ",
-      "tts": "her"
+      "tts": "her",
+      "letters": "ir"
     },
     {
       "id": "ɚ",
       "kind": "vowel",
       "group": "central",
       "kk": "ɚ",
-      "tts": "butter"
+      "tts": "butter",
+      "letters": "er"
     },
     {
       "id": "ɑ",
       "kind": "vowel",
       "group": "back",
       "kk": "ɑ",
-      "tts": "ah"
+      "tts": "ah",
+      "letters": "o"
     },
     {
       "id": "ɑr",
       "kind": "vowel",
       "group": "back",
       "kk": "ɑr",
-      "tts": "car"
+      "tts": "car",
+      "letters": "ar"
     },
     {
       "id": "ɔ",
       "kind": "vowel",
       "group": "back",
       "kk": "ɔ",
-      "tts": "aw"
+      "tts": "aw",
+      "letters": "al"
     },
     {
       "id": "ɔr",
       "kind": "vowel",
       "group": "back",
       "kk": "ɔr",
-      "tts": "or"
+      "tts": "or",
+      "letters": "or"
     },
     {
       "id": "ɔɪ",
       "kind": "vowel",
       "group": "back",
       "kk": "ɔɪ",
-      "tts": "boy"
+      "tts": "boy",
+      "letters": "oy"
     },
     {
       "id": "o",
       "kind": "vowel",
       "group": "back",
       "kk": "o",
-      "tts": "oh"
+      "tts": "oh",
+      "letters": "o"
     },
     {
       "id": "u",
       "kind": "vowel",
       "group": "back",
       "kk": "u",
-      "tts": "oo"
+      "tts": "oo",
+      "letters": "oo"
     },
     {
       "id": "ʊ",
       "kind": "vowel",
       "group": "back",
       "kk": "ʊ",
-      "tts": "book"
+      "tts": "book",
+      "letters": "oo"
     },
     {
       "id": "ʊr",
       "kind": "vowel",
       "group": "back",
       "kk": "ʊr",
-      "tts": "poor"
+      "tts": "poor",
+      "letters": "our"
     },
     {
       "id": "aʊ",
       "kind": "vowel",
       "group": "back",
       "kk": "aʊ",
-      "tts": "now"
+      "tts": "now",
+      "letters": "ow"
     },
     {
       "id": "p",
       "kind": "consonant",
       "group": "bilabial",
       "kk": "p",
-      "tts": "pen"
+      "tts": "pen",
+      "letters": "p"
     },
     {
       "id": "b",
       "kind": "consonant",
       "group": "bilabial",
       "kk": "b",
-      "tts": "bed"
+      "tts": "bed",
+      "letters": "b"
     },
     {
       "id": "m",
       "kind": "consonant",
       "group": "bilabial",
       "kk": "m",
-      "tts": "man"
+      "tts": "man",
+      "letters": "m"
     },
     {
       "id": "w",
       "kind": "consonant",
       "group": "bilabial",
       "kk": "w",
-      "tts": "we"
+      "tts": "we",
+      "letters": "w"
     },
     {
       "id": "f",
       "kind": "consonant",
       "group": "labiodental",
       "kk": "f",
-      "tts": "fan"
+      "tts": "fan",
+      "letters": "f"
     },
     {
       "id": "v",
       "kind": "consonant",
       "group": "labiodental",
       "kk": "v",
-      "tts": "van"
+      "tts": "van",
+      "letters": "v"
     },
     {
       "id": "θ",
       "kind": "consonant",
       "group": "dental",
       "kk": "θ",
-      "tts": "think"
+      "tts": "think",
+      "letters": "th"
     },
     {
       "id": "ð",
       "kind": "consonant",
       "group": "dental",
       "kk": "ð",
-      "tts": "this"
+      "tts": "this",
+      "letters": "th"
     },
     {
       "id": "t",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "t",
-      "tts": "ten"
+      "tts": "ten",
+      "letters": "t"
     },
     {
       "id": "d",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "d",
-      "tts": "den"
+      "tts": "den",
+      "letters": "d"
     },
     {
       "id": "s",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "s",
-      "tts": "see"
+      "tts": "see",
+      "letters": "s"
     },
     {
       "id": "z",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "z",
-      "tts": "zoo"
+      "tts": "zoo",
+      "letters": "z"
     },
     {
       "id": "n",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "n",
-      "tts": "no"
+      "tts": "no",
+      "letters": "n"
     },
     {
       "id": "l",
       "kind": "consonant",
       "group": "alveolar",
       "kk": "l",
-      "tts": "let"
+      "tts": "let",
+      "letters": "l"
     },
     {
       "id": "ʃ",
       "kind": "consonant",
       "group": "postalveolar",
       "kk": "ʃ",
-      "tts": "she"
+      "tts": "she",
+      "letters": "sh"
     },
     {
       "id": "ʒ",
       "kind": "consonant",
       "group": "postalveolar",
       "kk": "ʒ",
-      "tts": "vision"
+      "tts": "vision",
+      "letters": "s"
     },
     {
       "id": "tʃ",
       "kind": "consonant",
       "group": "postalveolar",
       "kk": "tʃ",
-      "tts": "chip"
+      "tts": "chip",
+      "letters": "ch"
     },
     {
       "id": "dʒ",
       "kind": "consonant",
       "group": "postalveolar",
       "kk": "dʒ",
-      "tts": "jam"
+      "tts": "jam",
+      "letters": "j"
     },
     {
       "id": "r",
       "kind": "consonant",
       "group": "postalveolar",
       "kk": "r",
-      "tts": "red"
+      "tts": "red",
+      "letters": "r"
     },
     {
       "id": "j",
       "kind": "consonant",
       "group": "palatal",
       "kk": "j",
-      "tts": "yes"
+      "tts": "yes",
+      "letters": "j"
     },
     {
       "id": "k",
       "kind": "consonant",
       "group": "velar",
       "kk": "k",
-      "tts": "key"
+      "tts": "key",
+      "letters": "k"
     },
     {
       "id": "g",
       "kind": "consonant",
       "group": "velar",
       "kk": "g",
-      "tts": "go"
+      "tts": "go",
+      "letters": "g"
     },
     {
       "id": "ŋ",
       "kind": "consonant",
       "group": "velar",
       "kk": "ŋ",
-      "tts": "sing"
+      "tts": "sing",
+      "letters": "ng"
     },
     {
       "id": "h",
       "kind": "consonant",
       "group": "glottal",
       "kk": "h",
-      "tts": "he"
+      "tts": "he",
+      "letters": "h"
     }
   ]
 }

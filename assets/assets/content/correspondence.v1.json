@@ -1,12 +1,10 @@
 {
   "version": "1",
   "source": {
-    "kind": "public-tables",
-    "title": "KK–DJ–IPA 公开对照表",
-    "refs": [
-      "维基百科「KK音標」條目的 KK/DJ/IPA 對比表",
-      "A Pronouncing Dictionary of American English (Kenyon & Knott, 1944/1953)"
-    ]
+    "kind": "booklet-split",
+    "title": "赖世雄《美语音标》",
+    "isbn": "9787119061207",
+    "refs": []
   },
   "mappings": [
     { "id": "i", "kk": "i", "dj": "iː", "ipa": "iː" },
