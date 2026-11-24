@@ -59,12 +59,26 @@ void main() {
     }
   });
 
-  test('the table carries a labelled public-tables source', () async {
+  test('the table carries the split KK-booklet source', () async {
     final table = await loadCorrespondence();
 
-    expect(table.sourceKind, 'public-tables');
-    expect(table.sourceLabel, isNotEmpty);
-    expect(table.sourceRefs, isNotEmpty);
+    expect(table.sourceKind, 'booklet-split');
+    expect(table.sourceTitle, '赖世雄《美语音标》');
+    expect(table.isbn, '9787119061207');
+    expect(
+      table.sourceRefs,
+      isEmpty,
+      reason: 'the public-table reference list leaves the data file',
+    );
+  });
+
+  test('the source label never renders an empty bracket pair', () async {
+    final table = await loadCorrespondence();
+
+    expect(table.sourceRefs, isEmpty);
+    expect(table.sourceLabel, table.sourceTitle);
+    expect(table.sourceLabel, isNot(contains('（）')));
+    expect(table.sourceLabel, isNot(contains('(')));
   });
 
   test('the content layer never imports domain or UI types', () async {

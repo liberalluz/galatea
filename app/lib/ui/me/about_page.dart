@@ -5,12 +5,12 @@ import '../../copy/app_copy.dart';
 import '../../main.dart' show kAppVersion;
 
 /// The About page (`REQ-001`, `REQ-012`, decision 7): the app version,
-/// the single content source — the data files' title and references, the
-/// ISBN slot reserved in the data structure, and the contingency
-/// public-tables labelling rendered until licensed data lands — plus the
-/// oss note, the feedback entry and the device-only limitation
-/// disclosure. The chart carries no footer: this page is the only
-/// attribution surface.
+/// the split source attribution — the design spec's fixed `source-note`
+/// (the KK booklet with its ISBN) and `about-notation-note` (DJ / IPA as
+/// international standard notation, not from the book) — plus the oss
+/// note, the feedback entry and the device-only limitation disclosure.
+/// The chart carries no footer: this page is the only attribution
+/// surface.
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key, this.correspondenceFuture});
 
@@ -35,60 +35,31 @@ class AboutPage extends StatelessWidget {
           FutureBuilder<CorrespondenceTable>(
             future: correspondenceFuture ?? loadCorrespondence(),
             builder: (context, snapshot) {
-              final table = snapshot.data;
-              if (table == null) {
+              if (snapshot.data == null) {
                 return const SizedBox(
                   key: ValueKey('about-source-loading'),
                   height: 48,
                 );
               }
+              // The split attribution (`REQ-001`, `REQ-012`): the source
+              // section renders the design spec's two fixed notes and
+              // composes nothing from the data at render time — the KK
+              // booklet with its ISBN, and DJ / IPA as international
+              // notation that does not come from the book.
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    copy.sourceTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    copy.sourceNote,
+                    key: const ValueKey('about-source-note'),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    table.sourceTitle.isNotEmpty
-                        ? table.sourceTitle
-                        : table.sourceLabel,
-                    key: const ValueKey('about-source'),
+                    copy.notationNote,
+                    key: const ValueKey('about-notation-note'),
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  for (final ref in table.sourceRefs)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        ref,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  // The ISBN slot (decision 7): a licensed data file
-                  // carries the booklet ISBN and the row renders; the
-                  // contingency public-tables data shows the fixed
-                  // contingency notice instead.
-                  if (table.isbn != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '${copy.isbnLabel} ${table.isbn}',
-                        key: const ValueKey('about-isbn'),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        copy.sourceContingency,
-                        key: const ValueKey('about-source-contingency'),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                    ),
                 ],
               );
             },

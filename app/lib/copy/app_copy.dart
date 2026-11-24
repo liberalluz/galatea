@@ -70,9 +70,8 @@ class AppCopy {
     required this.audioOffNotice,
     required this.aboutTitle,
     required this.versionLabel,
-    required this.sourceTitle,
-    required this.sourceContingency,
-    required this.isbnLabel,
+    required this.sourceNote,
+    required this.notationNote,
     required this.ossNote,
     required this.feedbackNote,
     required this.deviceDisclosure,
@@ -143,9 +142,8 @@ class AppCopy {
         audioOffNotice: '发音已关闭',
         aboutTitle: '关于',
         versionLabel: '版本',
-        sourceTitle: '内容来源',
-        sourceContingency: '暂以公开对照表为准，待授权数据后替换',
-        isbnLabel: 'ISBN',
+        sourceNote: 'KK 来源：赖世雄《美语音标》ISBN 9787119061207',
+        notationNote: 'DJ / IPA 为国际通用音标符号，不来自该教材',
         ossNote: '开源说明：本应用使用的开源组件在其仓库中列明',
         feedbackNote: '反馈：问题与建议请通过项目仓库提交',
         deviceDisclosure: '数据仅保存在本设备',
@@ -216,9 +214,9 @@ class AppCopy {
         audioOffNotice: 'Audio is off',
         aboutTitle: 'About',
         versionLabel: 'Version',
-        sourceTitle: 'Content source',
-        sourceContingency: 'Public tables for now, pending licensed data',
-        isbnLabel: 'ISBN',
+        sourceNote: 'KK source: Lai Shih-hsiung, American Phonetics, ISBN 9787119061207',
+        notationNote:
+            'DJ / IPA are international standard notation, not from the book',
         ossNote: 'Open source: the components this app uses are listed in their repositories',
         feedbackNote: 'Feedback: file issues and suggestions through the project repository',
         deviceDisclosure: 'Your data stays on this device only',
@@ -286,9 +284,8 @@ class AppCopy {
   final String audioOffNotice;
   final String aboutTitle;
   final String versionLabel;
-  final String sourceTitle;
-  final String sourceContingency;
-  final String isbnLabel;
+  final String sourceNote;
+  final String notationNote;
   final String ossNote;
   final String feedbackNote;
   final String deviceDisclosure;

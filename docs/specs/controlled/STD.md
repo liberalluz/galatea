@@ -14,9 +14,11 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Open the chart page and count the rendered phoneme entries.
   2. Inspect the chart page for a source label or footer.
-  3. Open the Me tab → About page and inspect its source entry.
+  3. Open the Me tab → About page and inspect its source section.
 - Exit: exactly 48 entries render; the chart shows no source label; the About
-  page shows the book-title + ISBN source.
+  page renders the two split notes — the KK booklet with its ISBN 9787119061207
+  and DJ / IPA as international standard notation not from the book — and no
+  public-table label or contingency sentence appears.
 
 ### `TC-CHART-002`
 
@@ -187,7 +189,8 @@ it is a recorded TBD row in the STP.
   2. Change one mapping value in the data file only (no code change).
   3. Reload the app and inspect the affected phoneme.
 - Exit: the displayed mapping follows the edited data and the data file carries
-  the book-title + ISBN source, rendered on the About page.
+  the split attribution — the KK booklet title + ISBN and no public-table
+  reference list — rendered as the two fixed notes on the About page.
 
 ### `TC-CONTENT-002`
 

@@ -61,8 +61,8 @@ reads UI state and the content layer never imports domain types.
 - 5-column print-glyph grid, only the two coarse group headers rendered and
   fine category labels hidden, last row left-aligned, no cross-group rows;
   narrow screens scroll horizontally or scale, all 48 phonemes reachable
-  (`REQ-002`, wireframe P1). No source footer on the chart; the source label
-  lives on the About page (`REQ-001`, decision 7).
+  (`REQ-002`, wireframe P1). No source footer on the chart; the split source
+  attribution lives on the About page (`REQ-001`, decision 7).
 - Notation switch KK/DJ/IPA at the top, default KK, switching keeps the
   current phoneme, missing glyphs keep the previous notation (`REQ-003`,
   ADR-0001). The selection lives in a shell-owned controller
@@ -187,11 +187,13 @@ cards (`REQ-006`–`REQ-011`, `REQ-036`).
   `ɑr`→`ɑː`, `ɔr`→`ɔː`, `ʊr`→`ʊə`, `g`→`ɡ`) switch skeleton with the
   selected notation (`REQ-012`, `REQ-013`). The writing zone reads the base
   strokes when the notation has no variant.
-- Data files are bundled, versioned and independent of app code; the source
-  label (`source-note` copy, book title + ISBN) marks the single source and is
-  rendered on the About page only (`REQ-001`, `REQ-012`, decision 7,
-  ADR-0004). Contingency: if booklet data cannot be licensed, the set is built
-  from public KK/DJ/IPA tables and labelled as such (SRS contingencies).
+- Data files are bundled, versioned and independent of app code; the split
+  source attribution is fixed copy — the design spec's `source-note` (KK:
+  booklet title + ISBN 9787119061207) and `about-notation-note` (DJ / IPA as
+  international standard notation, not from the book) — rendered on the About
+  page only, with nothing composed from the data at render time (`REQ-001`,
+  `REQ-012`, decision 7, ADR-0004). The correspondence data's source block
+  carries the KK booklet title and ISBN and no public-table reference list.
 
 ### §3.7 Audio pipeline
 
@@ -208,7 +210,7 @@ cards (`REQ-006`–`REQ-011`, `REQ-036`).
 - Settings live in Me → Settings: language (zh-CN / en-US, applies immediately to
   all copy) and audio toggle (affects the pronunciation button and listening
   tasks) (`S3`, wireframe P7).
-- About page (`S4`, wireframe P8) carries version, the single source label
+- About page (`S4`, wireframe P8) carries version, the two split source notes
   (`REQ-001`, `REQ-012`), oss note, feedback entry and the device-only
   limitation disclosure.
 
