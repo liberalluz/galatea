@@ -38,15 +38,14 @@ class CorrespondenceTable {
   final String sourceKind;
   final String sourceLabel;
 
-  /// The data file's source title on its own (`REQ-001`): the About page
-  /// renders it with its own copy-table labels.
+  /// The KK booklet title the data file credits (`REQ-001`); the split
+  /// attribution keeps it as the data-side source record, and the About
+  /// page renders the design spec's fixed notes instead of composing one.
   final String sourceTitle;
   final List<String> sourceRefs;
 
-  /// The ISBN slot (`REQ-001`, decision 7): reserved in the data
-  /// structure for the licensed booklet edition; `null` while the bundled
-  /// data is the contingency public-tables labelling, and the About page
-  /// renders the contingency notice instead of an ISBN row.
+  /// The ISBN slot (`REQ-001`, decision 7) of the KK booklet edition the
+  /// bundled data credits; `null` when a data file carries no ISBN.
   final String? isbn;
   final List<CorrespondenceMapping> mappings;
 }
@@ -60,7 +59,10 @@ Future<CorrespondenceTable> loadCorrespondence() async {
 
   final source = data['source'] as Map<String, dynamic>;
   final refs = (source['refs'] as List<dynamic>).cast<String>();
-  final sourceLabel = '${source['title']}（${refs.join('；')}）';
+  final title = (source['title'] as String?) ?? '';
+  // The split attribution carries no reference list, so the label is the
+  // title alone — an empty list must never render an empty bracket pair.
+  final sourceLabel = refs.isEmpty ? title : '$title（${refs.join('；')}）';
 
   final mappings = (data['mappings'] as List<dynamic>)
       .map((item) => _mappingFromJson(item as Map<String, dynamic>))
@@ -70,10 +72,10 @@ Future<CorrespondenceTable> loadCorrespondence() async {
     version: data['version'] as String,
     sourceKind: source['kind'] as String,
     sourceLabel: sourceLabel,
-    sourceTitle: (source['title'] as String?) ?? '',
+    sourceTitle: title,
     sourceRefs: refs,
-    // The slot reads the optional key; the bundled contingency file
-    // carries none, so the About page shows the contingency notice.
+    // The KK booklet's ISBN; the split attribution credits DJ and IPA as
+    // international notation, so no second source record is carried.
     isbn: source['isbn'] as String?,
     mappings: mappings,
   );
