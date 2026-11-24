@@ -41,14 +41,6 @@ import 'row_model.dart';
 /// the select state ignore the direct-read toggle. No standalone range
 /// screen exists.
 
-/// The notation labels are language-neutral abbreviations (ADR-0001);
-/// they stay a fixed map, not copy-table entries.
-const Map<Notation, String> _kNotationLabels = {
-  Notation.kk: 'KK',
-  Notation.dj: 'DJ',
-  Notation.ipa: 'IPA',
-};
-
 class ChartPage extends StatefulWidget {
   const ChartPage({
     super.key,
@@ -268,7 +260,7 @@ class _ChartPageState extends State<ChartPage> {
                     for (final n in Notation.values)
                       ButtonSegment<String>(
                         value: n.name,
-                        label: Text(_kNotationLabels[n]!),
+                        label: Text(notationLabels[n]!),
                       ),
                   ],
                   selected: {_activeNotation.name},

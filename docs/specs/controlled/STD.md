@@ -16,9 +16,11 @@ it is a recorded TBD row in the STP.
   2. Inspect the chart page for a source label or footer.
   3. Open the Me tab → About page and inspect its source section.
 - Exit: exactly 48 entries render; the chart shows no source label; the About
-  page renders the two split notes — the KK booklet with its ISBN 9787119061207
-  and DJ / IPA as international standard notation not from the book — and no
-  public-table label or contingency sentence appears.
+  page renders the three groups 应用信息 / 数据来源 / 使用与反馈 over a fixed
+  62px label column, its source group's `KK` row carries the booklet title with
+  ISBN 9787119061207 and its `DJ / IPA` row the international standard notation
+  note with no notation prefix in either value, and no public-table label or
+  contingency sentence appears.
 
 ### `TC-CHART-002`
 
@@ -190,7 +192,8 @@ it is a recorded TBD row in the STP.
   3. Reload the app and inspect the affected phoneme.
 - Exit: the displayed mapping follows the edited data and the data file carries
   the split attribution — the KK booklet title + ISBN and no public-table
-  reference list — rendered as the two fixed notes on the About page.
+  reference list — rendered verbatim as the `KK` and `DJ / IPA` rows of the
+  About page's source group.
 
 ### `TC-CONTENT-002`
 

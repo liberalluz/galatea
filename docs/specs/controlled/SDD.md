@@ -210,9 +210,18 @@ cards (`REQ-006`–`REQ-011`, `REQ-036`).
 - Settings live in Me → Settings: language (zh-CN / en-US, applies immediately to
   all copy) and audio toggle (affects the pronunciation button and listening
   tasks) (`S3`, wireframe P7).
-- About page (`S4`, wireframe P8) carries version, the two split source notes
-  (`REQ-001`, `REQ-012`), oss note, feedback entry and the device-only
-  limitation disclosure.
+- About page (`S4`, wireframe P8, plan B) is three groups stacked over a
+  fixed 62px label column, each group title over its rows: 应用信息 holds the
+  version, 数据来源 holds the `KK` row (booklet title + ISBN 9787119061207) and
+  the `DJ / IPA` row (international standard notation, not from the book), and
+  使用与反馈 holds the oss note, the dual feedback entries and the device-only
+  limitation disclosure (`REQ-001`, `REQ-012`). The notation name sits in the
+  label column and the values carry only their content, so nothing is composed
+  from the correspondence data at render time. Gaps, the label column and the
+  type steps come from the design spec's tokens (`AppTokens`), never from
+  per-screen numbers; the email entry is a disabled grey button while no
+  address exists, and the repository entry opens
+  `https://github.com/liberalluz/galatea/issues`.
 
 ### §3.9 Quality constraints (REQ-027–REQ-030)
 

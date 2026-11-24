@@ -21,6 +21,11 @@ acceptance criterion; it does not restate the PRD.
   the wording above. `REQ-036` is an ED-side requirement and takes no PRD R id.
 - The split source attribution (design handoff 2026-11-23, A19) restates
   `REQ-001` and `REQ-012`; every other row keeps the wording above.
+- The About-page B layout (design handoff 2026-11-24) restates `REQ-001` and
+  `REQ-012` again: the notation name moves into the label column (`KK`,
+  `DJ / IPA`), the value column carries only the content, and the page is laid
+  out as three groups over a fixed 62px label column; every other row keeps the
+  wording above.
 - `REQ-025` (iOS functional confirmation, PRD R25) is re-scheduled to a v0.2.x
   patch (product ruling 2026-11-21, option B) and is listed only for
   traceability; it is not part of this slice.
@@ -31,7 +36,7 @@ acceptance criterion; it does not restate the PRD.
 
 | ID | Requirement | Acceptance | Source |
 |---|---|---|---|
-| `REQ-001` | The chart covers the reference booklet's KK phoneme set (ISBN 9787119061207), shown in print glyphs | The chart contains exactly 48 phonemes (24 vowels + 24 consonants); the source attribution is split — the KK set is credited to the booklet with its ISBN, DJ and IPA are credited as international standard notation that does not come from the book — and appears only on the About page, so the chart carries no source footer | R1 |
+| `REQ-001` | The chart covers the reference booklet's KK phoneme set (ISBN 9787119061207), shown in print glyphs | The chart contains exactly 48 phonemes (24 vowels + 24 consonants); the source attribution is split — the KK set is credited to the booklet with its ISBN, DJ and IPA are credited as international standard notation that does not come from the book — and appears only on the About page's source group, whose two rows are labelled `KK` and `DJ / IPA` with the notation name in the fixed 62px label column and only the content in the value column, so the chart carries no source footer | R1 |
 | `REQ-002` | The chart is a 5-column grid with only the vowel / consonant coarse group headers | Only the two coarse headers are visible; fine category labels are not displayed; within a coarse group rows follow the place-of-articulation order, 5 phonemes per row and the last row at its actual count | R2 |
 | `REQ-003` | Three notation systems with switching | KK is the default; switching to DJ or IPA keeps the current phoneme selected | R3 |
 | `REQ-004` | Chart default state: tap opens the detail page | Tapping a symbol in the default chart state opens its detail page | R4 |
@@ -42,7 +47,7 @@ acceptance criterion; it does not restate the PRD.
 | `REQ-009` | Detail page stroke-order animation | The stroke-order animation can be played | R9 |
 | `REQ-010` | Detail page 2×2 example cards: one image + one word or one sentence | 4 cards are shown, each with one image and either one word or one sentence as the phoneme-level display form decides; the word and the sentence never render together; no translation text | R10 (2026-11-23) |
 | `REQ-011` | Detail page same-row member circles | The switcher shows the tapped phoneme's row members as circles in the top bar (5, the last row at its actual count), spread across the bar width, and defaults to the tapped phoneme; adjacent means same-row member and the row ends do not wrap | R11 (2026-11-23) |
-| `REQ-012` | KK/DJ/IPA correspondence data with the split source attribution | The data credits the KK column to the booklet (title + ISBN 9787119061207) and the DJ / IPA columns as international standard notation; the About page renders both notes and the mapping can be updated independently of app code | R12 |
+| `REQ-012` | KK/DJ/IPA correspondence data with the split source attribution | The data credits the KK column to the booklet (title + ISBN 9787119061207) and the DJ / IPA columns as international standard notation; the About page renders both notes verbatim in the source group's `KK` and `DJ / IPA` rows, inside the three-group layout the design spec fixes, and the mapping can be updated independently of app code | R12 |
 | `REQ-013` | Print and handwritten glyphs per phoneme, handwritten with stroke data | The chart and question stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data; every handwritten skeleton is recognisable as its symbol and corresponds to the printed letterform, and the skeleton follows the notation in effect | R13 (2026-11-23) |
 | `REQ-014` | Example cards carry images | Every example card shows an image | R14 |
 | `REQ-015` | Practice entry: chart floating button + in-page row-select mode | The chart's right-bottom floating button enters a row-select state (default first row selected; tapping another row moves the single-row selection — one row at a time); confirm starts the quiz on the selected row; no standalone range screen exists | R15 |

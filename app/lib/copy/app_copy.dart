@@ -69,12 +69,19 @@ class AppCopy {
     required this.audioLabel,
     required this.audioOffNotice,
     required this.aboutTitle,
-    required this.versionLabel,
-    required this.sourceNote,
-    required this.notationNote,
-    required this.ossNote,
-    required this.feedbackNote,
-    required this.deviceDisclosure,
+    required this.aboutGroupInfo,
+    required this.aboutGroupSource,
+    required this.aboutGroupUsage,
+    required this.aboutVersion,
+    required this.aboutSourceNote,
+    required this.aboutNotationNote,
+    required this.aboutOssLabel,
+    required this.aboutOssNote,
+    required this.aboutFeedbackLabel,
+    required this.aboutFeedbackEmail,
+    required this.aboutFeedbackRepo,
+    required this.aboutLimitationLabel,
+    required this.aboutLimitation,
     required this.dueToday,
     required this.dueInDays,
   });
@@ -141,12 +148,19 @@ class AppCopy {
         audioLabel: '发音',
         audioOffNotice: '发音已关闭',
         aboutTitle: '关于',
-        versionLabel: '版本',
-        sourceNote: 'KK 来源：赖世雄《美语音标》ISBN 9787119061207',
-        notationNote: 'DJ / IPA 为国际通用音标符号，不来自该教材',
-        ossNote: '开源说明：本应用使用的开源组件在其仓库中列明',
-        feedbackNote: '反馈：问题与建议请通过项目仓库提交',
-        deviceDisclosure: '数据仅保存在本设备',
+        aboutGroupInfo: '应用信息',
+        aboutGroupSource: '数据来源',
+        aboutGroupUsage: '使用与反馈',
+        aboutVersion: '版本',
+        aboutSourceNote: '赖世雄《美语音标》ISBN 9787119061207',
+        aboutNotationNote: '国际通用音标符号，不来自该教材',
+        aboutOssLabel: '开源说明',
+        aboutOssNote: '本项目以 oss 分发',
+        aboutFeedbackLabel: '反馈',
+        aboutFeedbackEmail: '发送邮件',
+        aboutFeedbackRepo: '项目仓库',
+        aboutLimitationLabel: '已知限制',
+        aboutLimitation: '掌握度与复习进度仅存本设备，换机或清除数据后需重新学习；不提供导出/导入与云同步',
         dueToday: '今天',
         dueInDays: '天后',
       );
@@ -213,13 +227,23 @@ class AppCopy {
         audioLabel: 'Audio',
         audioOffNotice: 'Audio is off',
         aboutTitle: 'About',
-        versionLabel: 'Version',
-        sourceNote: 'KK source: Lai Shih-hsiung, American Phonetics, ISBN 9787119061207',
-        notationNote:
-            'DJ / IPA are international standard notation, not from the book',
-        ossNote: 'Open source: the components this app uses are listed in their repositories',
-        feedbackNote: 'Feedback: file issues and suggestions through the project repository',
-        deviceDisclosure: 'Your data stays on this device only',
+        aboutGroupInfo: 'App info',
+        aboutGroupSource: 'Data source',
+        aboutGroupUsage: 'Usage and feedback',
+        aboutVersion: 'Version',
+        aboutSourceNote:
+            'Lai Shih-hsiung, American Phonetics, ISBN 9787119061207',
+        aboutNotationNote: 'international standard notation, not from the book',
+        aboutOssLabel: 'Open source',
+        aboutOssNote: 'Distributed as oss',
+        aboutFeedbackLabel: 'Feedback',
+        aboutFeedbackEmail: 'Send email',
+        aboutFeedbackRepo: 'Project repository',
+        aboutLimitationLabel: 'Known limits',
+        aboutLimitation:
+            'Mastery and review progress are stored only on this device; '
+            'switching devices or clearing data requires restarting; '
+            'no export/import or cloud sync',
         dueToday: 'Today',
         dueInDays: 'd',
       );
@@ -283,12 +307,19 @@ class AppCopy {
   final String audioLabel;
   final String audioOffNotice;
   final String aboutTitle;
-  final String versionLabel;
-  final String sourceNote;
-  final String notationNote;
-  final String ossNote;
-  final String feedbackNote;
-  final String deviceDisclosure;
+  final String aboutGroupInfo;
+  final String aboutGroupSource;
+  final String aboutGroupUsage;
+  final String aboutVersion;
+  final String aboutSourceNote;
+  final String aboutNotationNote;
+  final String aboutOssLabel;
+  final String aboutOssNote;
+  final String aboutFeedbackLabel;
+  final String aboutFeedbackEmail;
+  final String aboutFeedbackRepo;
+  final String aboutLimitationLabel;
+  final String aboutLimitation;
   final String dueToday;
   final String dueInDays;
 
