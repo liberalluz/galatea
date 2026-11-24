@@ -9,10 +9,12 @@
 
 ## Status
 
-**v0.2.0 released.** The interaction revamp is live: two top-level tabs
-(phonetics and Me), the chart's row-select practice entry, the shared quiz
-page and the handwriting overlay; review, settings and about move into the
-Me tab. The GitHub Pages deployment serves this release.
+**v0.2.1 released.** The v0.2.0 interaction revamp is live — two top-level
+tabs, the chart's row-select practice entry, the shared quiz page and the
+handwriting overlay. This patch rebuilds the detail page into one flat
+one-screen flow with 48 redrawn handwritten skeletons, and splits the About
+page's source credit between the KK booklet and DJ / IPA as international
+notation. The GitHub Pages deployment serves this release.
 
 ## What it is
 

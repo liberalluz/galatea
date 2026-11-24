@@ -120,6 +120,6 @@ void main() {
     expect(notationNote, lessThan(oss));
     expect(oss, lessThan(feedback));
     expect(feedback, lessThan(device));
-    expect(find.textContaining('0.2.0'), findsOneWidget);
+    expect(find.textContaining('0.2.1'), findsOneWidget);
   });
 }
