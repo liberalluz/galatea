@@ -16,6 +16,9 @@ acceptance criterion; it does not restate the PRD.
   `REQ-001`, `REQ-002`, `REQ-007`, `REQ-010`–`REQ-012`, `REQ-015`,
   `REQ-020`–`REQ-022`, `REQ-029` and adds `REQ-031`–`REQ-035`; every other row
   keeps its v0.1.0 acceptance.
+- The one-screen detail page (product ruling 2026-11-23) restates `REQ-010`,
+  `REQ-011`, `REQ-013` and `REQ-035` and adds `REQ-036`; every other row keeps
+  the wording above. `REQ-036` is an ED-side requirement and takes no PRD R id.
 - `REQ-025` (iOS functional confirmation, PRD R25) is re-scheduled to a v0.2.x
   patch (product ruling 2026-11-21, option B) and is listed only for
   traceability; it is not part of this slice.
@@ -35,10 +38,10 @@ acceptance criterion; it does not restate the PRD.
 | `REQ-007` | Detail page mouth-shape slot | Every phoneme's detail page has a mouth-shape slot; with licensed artwork missing the slot ships as a fixed placeholder and the data structure reserves the image path | R7 |
 | `REQ-008` | Detail page handwritten tracing | The handwriting area accepts tracing of the handwritten glyph | R8 |
 | `REQ-009` | Detail page stroke-order animation | The stroke-order animation can be played | R9 |
-| `REQ-010` | Detail page 2×2 example cards: image + one word + one sentence | 4 cards are shown, each with one image, one word and one sentence, no translation text | R10 |
-| `REQ-011` | Detail page same-row member circles | The switcher shows the tapped phoneme's row members as circles (5, the last row at its actual count) and defaults to the tapped phoneme; adjacent means same-row member | R11 |
+| `REQ-010` | Detail page 2×2 example cards: one image + one word or one sentence | 4 cards are shown, each with one image and either one word or one sentence as the phoneme-level display form decides; the word and the sentence never render together; no translation text | R10 (2026-11-23) |
+| `REQ-011` | Detail page same-row member circles | The switcher shows the tapped phoneme's row members as circles in the top bar (5, the last row at its actual count), spread across the bar width, and defaults to the tapped phoneme; adjacent means same-row member and the row ends do not wrap | R11 (2026-11-23) |
 | `REQ-012` | KK/DJ/IPA correspondence data with the single ISBN source | The data is labelled with the book title and ISBN (About page) and can be updated independently of app code | R12 |
-| `REQ-013` | Print and handwritten glyphs per phoneme, handwritten with stroke data | The chart and question stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data | R13 |
+| `REQ-013` | Print and handwritten glyphs per phoneme, handwritten with stroke data | The chart and question stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data; every handwritten skeleton is recognisable as its symbol and corresponds to the printed letterform, and the skeleton follows the notation in effect | R13 (2026-11-23) |
 | `REQ-014` | Example cards carry images | Every example card shows an image | R14 |
 | `REQ-015` | Practice entry: chart floating button + in-page row-select mode | The chart's right-bottom floating button enters a row-select state (default first row selected; tapping another row moves the single-row selection — one row at a time); confirm starts the quiz on the selected row; no standalone range screen exists | R15 |
 | `REQ-016` | Recognition task: print stem, 4 spelling options | Exactly 4 options are shown and exactly 1 is correct | R16 |
@@ -60,7 +63,8 @@ acceptance criterion; it does not restate the PRD.
 | `REQ-032` | The Me tab hosts four pages: home, review, settings, about | The Me tab home shows the mastery card and the review status strip; review, settings and about open from it as drill-downs | PD spec 2026-11-21, decision 8 + skeleton S2–S4 |
 | `REQ-033` | One-time first-run hint | On first launch a light non-blocking hint explains the two non-obvious interactions; dismissing it is permanent, later launches show no hint | PD spec 2026-11-21, skeleton S1 |
 | `REQ-034` | Shared quiz page for new and review sessions | A new-practice session (the selected row) and a review session (due queue) render the same quiz page; only the item source differs | PD spec 2026-11-21, decision 9 |
-| `REQ-035` | Non-scored handwriting overlay on the detail page | The detail page's ✎ control opens a handwriting overlay (covering the detail page, not a route) for free tracing with clear/rewrite; it never produces a score or verdict — scoring stays with the writing task (`REQ-018`) | PD spec 2026-11-21, decision 12 |
+| `REQ-035` | Non-scored handwriting overlay on the detail page | A round handwriting control on the content layer's top-right corner opens a handwriting overlay (covering the detail page, not a route) for free tracing with clear/rewrite; it never produces a score or verdict — scoring stays with the writing task (`REQ-018`); the top bar carries no handwriting control | PD spec 2026-11-21, decision 12 (2026-11-23) |
+| `REQ-036` | The detail page is one flat one-screen content flow | The page body is a single centred column limited to 420–480 px with no breakpoint branch and no zone card frames or zone headings; the top bar carries the printed symbol and the same-row member circles; one mapping row between the top bar and the writing area shows the phoneme's spelling fragment next to the printed symbol of the notation currently selected on the chart page; the page repeats no large hero glyph and shows no star row; the pronunciation control is an inline line under the writing card; the 2×2 example grid takes the height the fixed parts leave over and reaches the screen bottom | ED B32 ruling 2026-11-23 |
 
 ## Product rules (countable criteria)
 

@@ -17,6 +17,7 @@ class PhonemeCatalogEntry {
     required this.group,
     required this.printGlyph,
     this.tts = '',
+    this.letters = '',
   });
 
   final String id;
@@ -28,6 +29,12 @@ class PhonemeCatalogEntry {
   /// phonetic symbols the browser engines cannot read, so each entry carries
   /// an English approximation. Falls back to the id when absent.
   final String tts;
+
+  /// The spelling fragment that carries this sound in English (`REQ-036`):
+  /// the letters highlighted in the phoneme's first example word. The
+  /// detail page's mapping row renders it beside the printed symbol, so the
+  /// user sees how the sound is spelled next to the sound itself.
+  final String letters;
 }
 
 class PhonemeCatalog {
@@ -70,5 +77,6 @@ PhonemeCatalogEntry _entryFromJson(Map<String, dynamic> json) {
     group: json['group'] as String,
     printGlyph: json['kk'] as String,
     tts: (json['tts'] as String?) ?? json['id'] as String,
+    letters: (json['letters'] as String?) ?? '',
   );
 }

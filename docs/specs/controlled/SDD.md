@@ -4,9 +4,10 @@
 
 ## 1. Scope and sources
 
-- Requirements: `docs/specs/controlled/SRS.md` (`REQ-001`–`REQ-035`;
+- Requirements: `docs/specs/controlled/SRS.md` (`REQ-001`–`REQ-036`;
   `REQ-031`–`REQ-035` restate the v0.2.0 interaction revamp confirmed by the
-  product owner on 2026-11-21; `REQ-025` is a v0.2.x patch and listed for
+  product owner on 2026-11-21; `REQ-036` restates the one-screen detail page
+  confirmed on 2026-11-23; `REQ-025` is a v0.2.x patch and listed for
   traceability).
 - Behaviour and layout: `galatea-docs/design/design-spec.md` — cited, not
   copied. Items marked as fixed there are not re-invented here.
@@ -64,7 +65,9 @@ reads UI state and the content layer never imports domain types.
   lives on the About page (`REQ-001`, decision 7).
 - Notation switch KK/DJ/IPA at the top, default KK, switching keeps the
   current phoneme, missing glyphs keep the previous notation (`REQ-003`,
-  ADR-0001).
+  ADR-0001). The selection lives in a shell-owned controller
+  (`NotationController`), so the detail page reads the same notation the user
+  picked here (`REQ-036`).
 - Default state: tap opens the detail page (`REQ-004`); direct-read mode:
   top-right toggle, tap plays audio only, the fixed hint line
   (copy `reading-mode-hint`) sits between the switch row and the grid
@@ -80,36 +83,56 @@ reads UI state and the content layer never imports domain types.
 
 ### §3.3 Detail page
 
-Fixed zone order (decision 11/13, wireframe P3): same-row circle switcher →
-large glyph + stars (reduced) → mouth-shape slot beside the single writing
-grid → pronunciation button → 2×2 example cards (`REQ-006`–`REQ-011`).
+The detail page is one flat content flow (`REQ-036`, B32 ruling, wireframe
+P3 redrawn): the page body is a single centred column limited to 420–480 px
+with no breakpoint branch, the zone cards lose their frames and their section
+headings, and the fixed parts take the top of the column while the 2×2 example
+grid takes the height they leave over and reaches the screen bottom.
 
-- Same-row member circles (`REQ-011`, decision 5): the switcher renders the
-  current phoneme's row members from the shared row model (5 circles, last
-  row its actual count) and defaults to the tapped phoneme, not the row head;
-  adjacent means same-row member, so navigation never crosses rows and the
-  ends of a row do not wrap.
-- Mouth-shape slot per phoneme (`REQ-007`): a fixed placeholder slot ships
-  when licensed artwork is missing and the data structure reserves the image
-  path; the placeholder is never another phoneme's image and never a blank
-  area.
+Order: top bar (same-row member circles + the printed symbol) → mapping row →
+mouth slot beside the writing card → inline pronunciation line → 2×2 example
+cards (`REQ-006`–`REQ-011`, `REQ-036`).
+
+- Same-row member circles (`REQ-011`, decision 5): the circles live in the top
+  bar and spread across its width, one circle per row member from the shared
+  row model (5 circles, last row its actual count), and default to the tapped
+  phoneme, not the row head; adjacent means same-row member, so navigation
+  never crosses rows and the ends of a row do not wrap. The page body carries
+  no second switcher.
+- Mapping row (`REQ-036`): one row between the top bar and the writing area
+  pairs the phoneme's spelling fragment with the printed symbol of the
+  notation currently selected on the chart page — the left chip carries the
+  spelling fragment from the catalogue's `letters` field, the right value
+  carries the printed symbol of the selected notation. The page repeats no
+  large hero glyph and shows no star row; the mastery stars stay in the Me tab
+  statistics (`REQ-023`).
+- Mouth-shape slot per phoneme (`REQ-007`): the slot renders as a small card
+  beside the writing card, which is the page's dominant element and carries the
+  cross guides; when licensed artwork is missing the slot ships as a fixed
+  placeholder and the data structure reserves the image path; the placeholder
+  is never another phoneme's image and never a blank area.
 - Single writing grid (`REQ-008`, `REQ-009`, ADR-0003): the stroke-order
   animation auto-plays once on entry; tapping the grid replays the stroke
   order with pronunciation (decision 13); missing stroke data keeps the fixed
-  `stroke-pending` state with playback disabled, independent of tracing.
-- Handwriting overlay (`REQ-035`, decision 12): the top-right ✎ control opens
-  a free-tracing board as an overlay covering the detail page — grey model,
-  cross guides, strokes follow the pointer, clear-and-rewrite, done/close
-  returns to the detail page. It is an overlay, not a route, and it never
-  produces a score or verdict; scoring stays with the writing task
+  `stroke-pending` state with playback disabled, independent of tracing. The
+  handwritten model is drawn with an equal-ratio mapping centred in the writing
+  card, so the letterform keeps its proportions and the margins stay blank.
+- Handwriting overlay (`REQ-035`, decision 12): a round handwriting control on
+  the content layer's top-right corner opens a free-tracing board as an overlay
+  covering the detail page — grey model, cross guides, strokes follow the
+  pointer, clear-and-rewrite, done/close returns to the detail page. The top
+  bar carries no handwriting control. It is an overlay, not a route, and it
+  never produces a score or verdict; scoring stays with the writing task
   (`REQ-018`).
-- Pronunciation button with loading/ready/playing/failed states; failure
-  retries once and never blocks other zones; the button remains the explicit
-  accessible audio entry beside the writing-grid hotspot (audio pipeline per
-  §3.7).
-- 2×2 example cards (`REQ-010`, decision 10): one image + one word + one
-  sentence per card, no translation; missing images use a placeholder, cards
-  are never hidden (`REQ-014`).
+- Pronunciation line (`REQ-006`): one inline line right under the writing card
+  carrying the printed symbol and the speaker button, with the four fixed
+  states loading / ready / playing / failed; failure retries once and never
+  blocks the other sections.
+- 2×2 example cards (`REQ-010`, decision 10): the grid takes the height the
+  fixed parts leave over and reaches the bottom edge; each card carries one
+  image and either one word or one sentence as the phoneme-level display form
+  decides — the two never render together; no translation; missing images use
+  a placeholder, cards are never hidden (`REQ-014`).
 
 ### §3.4 Practice
 
@@ -151,6 +174,19 @@ grid → pronunciation button → 2×2 example cards (`REQ-006`–`REQ-011`).
   reserve the image field and mouth-shape records reserve the image path so
   placeholder delivery can be replaced without schema change (`REQ-007`,
   `REQ-014`).
+- The phoneme record carries a `letters` field — one representative spelling
+  fragment per phoneme — which the detail page's mapping row renders as the
+  left chip (`REQ-036`). The example record carries a phoneme-level
+  `displayForm` that decides whether its cards show the word or the sentence;
+  the two never render together (`REQ-010`).
+- The glyph record carries the base strokes plus a per-notation variant list.
+  The 32 phonemes whose KK / DJ / IPA letterforms agree share one skeleton, the
+  4 pure long vowels (`i`, `ɑ`, `ɔ`, `u`) take the extra long-vowel stroke
+  under DJ and IPA, and the 12 whose letterform itself differs (`e`→`eɪ`,
+  `ɛ`→`e`, `o`→`əʊ`, `ɝ`→`ɜː`, `ɚ`→`ə`, `ɪr`→`ɪə`, `ɛr`→`eə`, `iə`→`ɪə`,
+  `ɑr`→`ɑː`, `ɔr`→`ɔː`, `ʊr`→`ʊə`, `g`→`ɡ`) switch skeleton with the
+  selected notation (`REQ-012`, `REQ-013`). The writing zone reads the base
+  strokes when the notation has no variant.
 - Data files are bundled, versioned and independent of app code; the source
   label (`source-note` copy, book title + ISBN) marks the single source and is
   rendered on the About page only (`REQ-001`, `REQ-012`, decision 7,
@@ -241,6 +277,7 @@ grid → pronunciation button → 2×2 example cards (`REQ-006`–`REQ-011`).
 | `REQ-033` | §3.1 |
 | `REQ-034` | §3.4 |
 | `REQ-035` | §3.3 |
+| `REQ-036` | §3.2, §3.3, §3.6 |
 
 ## 5. Decisions
 

@@ -184,17 +184,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(DetailPage), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('audio-play')),
-        200,
-        scrollable: find
-            .descendant(
-              of: find.byType(DetailPage),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pump();
+      // The detail page is a flat one-screen flow, so the pronunciation
+      // control is on screen without scrolling.
       expect(find.byKey(const ValueKey('audio-play')), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('audio-play')));
@@ -221,17 +212,9 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('phoneme-a')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('audio-play')),
-        200,
-        scrollable: find
-            .descendant(
-              of: find.byType(DetailPage),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pump();
+      // The detail page is a flat one-screen flow: the pronunciation
+      // control is on screen without scrolling.
+      expect(find.byKey(const ValueKey('audio-play')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('audio-play')));
       await tester.pump();
       expect(settings.audioOn, isTrue, reason: 'diag: still on at tap');
@@ -268,19 +251,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(DetailPage), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Mouth'),
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byType(DetailPage),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pump();
-    expect(find.text('Mouth'), findsOneWidget);
-    expect(find.text('Writing'), findsOneWidget);
-    expect(find.text('Pronunciation'), findsOneWidget);
+    // The flat flow dropped the zone headings, so the migrated surfaces
+    // are the writing card's own copy and the mouth placeholder.
+    expect(find.text('Trace here'), findsOneWidget);
+    expect(find.text('Clear'), findsOneWidget);
+    expect(find.text('Mouth image pending'), findsOneWidget);
   });
 }

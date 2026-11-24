@@ -37,7 +37,10 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Confirm the default notation is KK.
   2. Select a phoneme, switch to DJ, then to IPA.
-- Exit: symbols re-render per notation while the selected phoneme stays the same.
+  3. Open the selected phoneme's detail page.
+- Exit: symbols re-render per notation while the selected phoneme stays the
+  same; the detail page shows the selected notation's symbol in the mapping
+  row, the top bar and the pronunciation line.
 
 ### `TC-CHART-004`
 
@@ -72,40 +75,67 @@ it is a recorded TBD row in the STP.
 - Covers: `REQ-006`
 - Preconditions: detail page of any phoneme open.
 - Steps:
-  1. Tap the pronunciation button.
-  2. Repeat on a second phoneme.
-- Exit: audio starts on each tap; forcing a failure shows the fixed retry state without blocking other sections.
+  1. Inspect the pronunciation control under the writing card.
+  2. Tap the speaker button.
+  3. Repeat on a second phoneme.
+- Exit: the control renders as one inline line carrying the printed symbol and
+  the speaker button; each tap starts playback; forcing a failure shows the
+  fixed retry state without blocking other sections.
 
 ### `TC-DETAIL-002`
 
 - Covers: `REQ-007`
 - Preconditions: detail pages reachable for all 48 phonemes; at least one phoneme
   has no mouth-shape asset in the data.
-- Steps: open every phoneme's detail page and inspect the mouth-shape slot;
-  inspect the data record of the phoneme without artwork.
-- Exit: each page shows a mouth-shape slot; the phoneme without artwork renders
-  the fixed placeholder (never a blank area or another phoneme's image) and its
-  data record reserves the image path.
+- Steps: open every phoneme's detail page and inspect the mouth-shape slot
+  beside the writing card; inspect the data record of the phoneme without
+  artwork.
+- Exit: each page shows a mouth-shape slot rendering as a small card beside
+  the larger writing card; the phoneme without artwork renders the fixed
+  placeholder (never a blank area or another phoneme's image) and its data
+  record reserves the image path.
 
 ### `TC-DETAIL-003`
 
 - Covers: `REQ-010`
-- Preconditions: detail page open for a phoneme with complete example data.
-- Steps: inspect the 2×2 example card grid.
-- Exit: 4 cards render, each with one image, one word and one sentence, no
-  translation text.
+- Preconditions: detail page open for a phoneme with complete example data;
+  one phoneme marked as word-form and one as sentence-form.
+- Steps: inspect the 2×2 example card grid of both phonemes.
+- Exit: 4 cards render, each with one image and either one word or one
+  sentence as the phoneme-level display form decides; the word and the
+  sentence never render together; no translation text.
 
 ### `TC-DETAIL-004`
 
 - Covers: `REQ-011`
 - Preconditions: detail page reached by tapping a chart cell (not the row head).
 - Steps:
-  1. Compare the circle switcher with the tapped phoneme's row members.
+  1. Compare the top bar's circles with the tapped phoneme's row members.
   2. Tap circles within the row until both ends.
-- Exit: the switcher shows the tapped phoneme's row members (5 circles, the
-  last row its actual count) and defaults to the tapped phoneme; each tap
-  refreshes all sections with a same-row member; navigation never crosses rows
-  and row ends do not wrap.
+- Exit: the top bar shows the tapped phoneme's row members as circles spread
+  across the bar width (5 circles, the last row its actual count) and defaults
+  to the tapped phoneme; each tap refreshes all sections with a same-row
+  member; navigation never crosses rows and row ends do not wrap; the page
+  body carries no second circle switcher.
+
+### `TC-DETAIL-005`
+
+- Covers: `REQ-036`
+- Preconditions: detail page open on a wide window (≥ 1024 px wide).
+- Steps:
+  1. Inspect the page body: measure the content column's width and check for
+     zone card frames and zone section headings.
+  2. Inspect the row between the top bar and the writing area.
+  3. Compare the page against the large hero glyph and the star row.
+  4. Inspect the pronunciation control's placement.
+  5. Measure the example grid against the bottom edge of the viewport.
+- Exit: the page body is a single centred column limited to 420–480 px with
+  no breakpoint branch; no zone card frames and no zone section headings
+  render; one mapping row shows the phoneme's spelling fragment next to the
+  printed symbol of the selected notation; no large hero glyph and no star row
+  render; the pronunciation control is an inline line under the writing card;
+  the 2×2 example grid takes the height the fixed parts leave over and reaches
+  the screen bottom.
 
 ### `TC-TRACE-001`
 
@@ -114,7 +144,12 @@ it is a recorded TBD row in the STP.
 - Steps:
   1. Draw several strokes over the tracing area.
   2. Interrupt input (pointer leave / second touch) and resume.
-- Exit: strokes render over the handwritten glyph and strokes drawn so far are kept on interruption.
+  3. Compare the drawn model's proportions with the printed letterform in a
+     wide writing card.
+- Exit: strokes render over the handwritten glyph and strokes drawn so far are
+  kept on interruption; the handwritten model is drawn with an equal-ratio
+  mapping centred in the writing card, so the letterform keeps its
+  proportions instead of stretching horizontally and the margins stay blank.
 
 ### `TC-TRACE-002`
 
@@ -133,12 +168,15 @@ it is a recorded TBD row in the STP.
 - Covers: `REQ-035`
 - Preconditions: detail page open; the writing task flow reachable for contrast.
 - Steps:
-  1. Tap the top-right ✎ control and observe the presentation.
-  2. Draw strokes, clear and redraw, then close via done and via close.
-- Exit: the ✎ control opens a board that covers the detail page as an overlay
-  (no route change); strokes follow the pointer, clear rewrites cleanly, both
-  exits return to the detail page; no score or verdict is ever produced — the
-  writing task (`REQ-018`) remains the only scored surface.
+  1. Tap the round handwriting control on the content layer's top-right
+     corner and observe the presentation.
+  2. Inspect the top bar for a handwriting control.
+  3. Draw strokes, clear and redraw, then close via done and via close.
+- Exit: the round control opens a board that covers the detail page as an
+  overlay (no route change); the top bar carries no handwriting control;
+  strokes follow the pointer, clear rewrites cleanly, both exits return to the
+  detail page; no score or verdict is ever produced — the writing task
+  (`REQ-018`) remains the only scored surface.
 
 ### `TC-CONTENT-001`
 
@@ -155,8 +193,8 @@ it is a recorded TBD row in the STP.
 
 - Covers: `REQ-013`
 - Preconditions: chart, practice stems and detail tracing areas reachable.
-- Steps: compare glyph rendering on the chart and question stems against the tracing/writing surfaces.
-- Exit: chart and stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data.
+- Steps: compare glyph rendering on the chart and question stems against the tracing/writing surfaces; compare each handwritten skeleton against the printed letterform of its notation; switch the notation and observe the skeleton.
+- Exit: chart and stems render print glyphs; tracing and writing tasks use the handwritten glyph with stroke data; every handwritten skeleton is recognisable as its symbol and corresponds to the printed letterform; the skeleton follows the selected notation — the phonemes whose three notations share one letterform share one skeleton, the pure long vowels take the extra long-vowel stroke, and the phonemes whose letterform itself differs switch skeleton with the notation.
 
 ### `TC-CONTENT-003`
 

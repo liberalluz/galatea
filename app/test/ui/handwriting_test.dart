@@ -74,7 +74,6 @@ void main() {
     WidgetTester tester, {
     required String initialId,
     FakeAudioService? audio,
-    MasteryController? mastery,
   }) async {
     // Tall viewport so the lazy ListView builds every zone section.
     tester.view.physicalSize = const Size(1080, 12000);
@@ -88,7 +87,6 @@ void main() {
           initialId: initialId,
           glyphs: fakeGlyphs(),
           audioService: audio,
-          mastery: mastery,
         ),
       ),
     );
@@ -175,7 +173,7 @@ void main() {
       await pumpDetail(tester, initialId: 'a');
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('zone-writing')), findsOneWidget);
+      expect(find.byKey(const ValueKey('detail-writing-card')), findsOneWidget);
       expect(find.byKey(const ValueKey('tracing-area')), findsOneWidget);
       expect(find.byKey(const ValueKey('trace-hint')), findsOneWidget);
     },
@@ -232,12 +230,12 @@ void main() {
   );
 
   testWidgets(
-    'the pen control opens the handwriting overlay covering the page with no route change',
+    'the handwriting button opens the overlay covering the page with no route change',
     (tester) async {
       await pumpDetail(tester, initialId: 'a');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('detail-pen')));
+      await tester.tap(find.byKey(const ValueKey('detail-handwriting-button')));
       await tester.pump();
 
       expect(
@@ -265,7 +263,7 @@ void main() {
       await pumpDetail(tester, initialId: 'a');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('detail-pen')));
+      await tester.tap(find.byKey(const ValueKey('detail-handwriting-button')));
       await tester.pump();
 
       final start = await centerOf(tester, 'overlay-canvas');
@@ -286,7 +284,7 @@ void main() {
         findsNothing,
         reason: 'done returns to the detail page',
       );
-      expect(find.byKey(const ValueKey('zone-writing')), findsOneWidget);
+      expect(find.byKey(const ValueKey('detail-writing-card')), findsOneWidget);
     },
   );
 
@@ -295,10 +293,10 @@ void main() {
     mastery.load();
     mastery.engine.state.entryFor('a').star = 2;
 
-    await pumpDetail(tester, initialId: 'a', mastery: mastery);
+    await pumpDetail(tester, initialId: 'a');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('detail-pen')));
+    await tester.tap(find.byKey(const ValueKey('detail-handwriting-button')));
     await tester.pump();
 
     final start = await centerOf(tester, 'overlay-canvas');
@@ -306,15 +304,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('overlay-done')));
     await tester.pumpAndSettle();
 
-    final row = tester.widget<Row>(find.byKey(const ValueKey('detail-star')));
-    final filled = row.children
-        .whereType<Icon>()
-        .where((icon) => icon.icon == Icons.star)
-        .length;
     expect(
-      filled,
+      mastery.engine.state.entryFor('a').star,
       2,
       reason: 'free tracing never touches the mastery stars (REQ-035)',
+    );
+    expect(
+      find.byKey(const ValueKey('detail-star')),
+      findsNothing,
+      reason: 'the detail page carries no score surface at all',
     );
   });
 }

@@ -166,7 +166,11 @@ void main() {
     audio.state.value = AudioPlaybackState.failed;
     await tester.pump();
 
-    for (final zone in ['zone-mouth', 'zone-writing', 'zone-words']) {
+    for (final zone in [
+      'detail-mouth-card',
+      'detail-writing-card',
+      'example-grid',
+    ]) {
       expect(
         find.byKey(ValueKey(zone)),
         findsOneWidget,

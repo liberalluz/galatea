@@ -10,6 +10,7 @@ import '../../copy/app_copy.dart';
 import '../../domain/mastery_controller.dart';
 import '../../domain/mastery_prefs_store.dart';
 import '../../domain/mastery_store.dart';
+import '../../domain/notation_controller.dart';
 import '../chart/chart_page.dart';
 import '../me/me_page.dart';
 import '../me/review_page.dart';
@@ -74,6 +75,12 @@ class _ShellPageState extends State<ShellPage> {
   int _index = 0;
   bool _readingMode = false;
   bool _showFirstRunHint = false;
+
+  /// The shell-owned notation selection (`REQ-036`): the chart page's
+  /// KK / DJ / IPA switch writes here and the detail page reads it, so the
+  /// symbol the user picked on the chart is the symbol the detail page
+  /// shows. The controller outlives the chart page's route.
+  final NotationController _notation = NotationController();
 
   /// The preferences instance resolved once: the injected future in
   /// tests, the platform instance with the degraded-store timeout in
@@ -229,6 +236,7 @@ class _ShellPageState extends State<ShellPage> {
                       audioService: widget.audioService,
                       readingMode: _readingMode,
                       mastery: mastery,
+                      notation: _notation,
                       onReviewDeepLink: () => _openReview(mastery),
                     ),
                     MePage(
